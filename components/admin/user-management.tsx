@@ -1,68 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, MoreHorizontal, Shield, Crown } from "lucide-react"
+import { Search, Trash2, Shield, Crown, RefreshCw } from "lucide-react"
 import { motion } from "framer-motion"
-
-const users = [
-  {
-    id: 1,
-    username: "CowboyJoe",
-    email: "joe@example.com",
-    role: "Admin",
-    status: "Active",
-    joinDate: "2024-01-15",
-    lastActive: "2 hours ago",
-  },
-  {
-    id: 2,
-    username: "DesertRose",
-    email: "rose@example.com",
-    role: "Moderator",
-    status: "Active",
-    joinDate: "2024-02-03",
-    lastActive: "1 day ago",
-  },
-  {
-    id: 3,
-    username: "OutlawMike",
-    email: "mike@example.com",
-    role: "User",
-    status: "Banned",
-    joinDate: "2024-01-28",
-    lastActive: "1 week ago",
-  },
-  {
-    id: 4,
-    username: "SheriffSarah",
-    email: "sarah@example.com",
-    role: "Moderator",
-    status: "Active",
-    joinDate: "2024-01-10",
-    lastActive: "30 minutes ago",
-  },
-  {
-    id: 5,
-    username: "GoldRushGary",
-    email: "gary@example.com",
-    role: "User",
-    status: "Active",
-    joinDate: "2024-03-01",
-    lastActive: "5 hours ago",
-  },
-]
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users')
+      const data = await response.json()
+      setUsers(data.users || [])
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
 
   const filteredUsers = users.filter(
     (user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const getRoleIcon = (role: string) => {
@@ -105,8 +75,8 @@ export function UserManagement() {
         <CardDescription className="text-sage-green/80">Manage community members and their permissions</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-6">
-          <div className="relative">
+        <div className="mb-6 flex gap-4">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-sage-green/60" />
             <Input
               placeholder="Search users..."
@@ -115,10 +85,30 @@ export function UserManagement() {
               className="pl-10 bg-charcoal/50 border-amber-gold/30 text-sage-green"
             />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchUsers}
+            disabled={loading}
+            className="border-amber-gold/30 text-amber-gold hover:bg-amber-gold/10"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         <div className="space-y-4">
-          {filteredUsers.map((user, index) => (
+          {loading ? (
+            <div className="text-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-amber-gold mb-2" />
+              <p className="text-sage-green/60">Loading users...</p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sage-green/60">No users found</p>
+            </div>
+          ) : (
+            filteredUsers.map((user, index) => (
             <motion.div
               key={user.id}
               initial={{ opacity: 0, y: 20 }}
@@ -133,38 +123,53 @@ export function UserManagement() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-semibold text-sage-green">{user.username}</h4>
-                    {getRoleIcon(user.role)}
+                    {user.discordId && <Shield className="h-4 w-4 text-electric-blue" />}
                   </div>
-                  <p className="text-sage-green/60 text-sm">{user.email}</p>
+                  <p className="text-sage-green/60 text-sm">{user.email || 'Discord User'}</p>
                   <p className="text-sage-green/40 text-xs">
-                    Joined {user.joinDate} • Last active {user.lastActive}
+                    Joined {new Date(user.createdAt).toLocaleDateString()} • 
+                    {user.isDiscordConnected ? ' Discord Connected' : ' Email User'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <Badge className={getRoleBadgeColor(user.role)}>{user.role}</Badge>
-                <Badge className={getStatusBadgeColor(user.status)}>{user.status}</Badge>
+                <Badge className={user.isDiscordConnected ? "bg-electric-blue text-charcoal" : "bg-sage-green text-charcoal"}>
+                  {user.isDiscordConnected ? "Discord" : "Email"}
+                </Badge>
+                <Badge className={user.isEmailVerified || user.isDiscordConnected ? "bg-sage-green text-charcoal" : "bg-amber-gold text-charcoal"}>
+                  {user.isEmailVerified || user.isDiscordConnected ? "Verified" : "Unverified"}
+                </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-sage-green/60 hover:text-sage-green hover:bg-amber-gold/10"
+                  className="text-rust-red/60 hover:text-rust-red hover:bg-rust-red/10"
                   onClick={async () => {
-                    if (confirm(`Are you sure you want to delete user ${user.username}?`)) {
-                      await fetch('/api/user', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: user.id })
-                      })
-                      window.location.reload()
+                    if (confirm(`Are you sure you want to permanently delete user ${user.username}? This action cannot be undone and will remove them from the database.`)) {
+                      try {
+                        const response = await fetch('/api/admin/users', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ id: user._id })
+                        })
+                        if (response.ok) {
+                          await fetchUsers() // Refresh the list
+                        } else {
+                          alert('Failed to delete user')
+                        }
+                      } catch (error) {
+                        console.error('Error deleting user:', error)
+                        alert('Failed to delete user')
+                      }
                     }
                   }}
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </motion.div>
-          ))}
+            ))
+          )}
         </div>
       </CardContent>
     </Card>

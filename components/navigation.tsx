@@ -11,7 +11,6 @@ import { useSession, signIn, signOut } from "next-auth/react"
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/servers", label: "Servers", icon: Server },
-  { href: "/community", label: "Community", icon: Users },
   { href: "/docs", label: "Documentation", icon: BookOpen },
   { href: "/support", label: "Support", icon: HelpCircle },
 ]

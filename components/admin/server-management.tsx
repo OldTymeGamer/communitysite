@@ -1,59 +1,67 @@
 "use client"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Play, Pause, RotateCcw, Settings, Users, Zap } from "lucide-react"
+import { Play, Pause, RotateCcw, Settings, Users, Zap, Trash2, RefreshCw, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 
-const servers = [
-  {
-    id: 1,
-    name: "Wild West RP",
-    status: "Online",
-    players: 89,
-    maxPlayers: 100,
-    uptime: "99.8%",
-    cpu: 45,
-    memory: 67,
-    location: "US East",
-  },
-  {
-    id: 2,
-    name: "Frontier Life",
-    status: "Online",
-    players: 76,
-    maxPlayers: 80,
-    uptime: "98.5%",
-    cpu: 62,
-    memory: 78,
-    location: "US West",
-  },
-  {
-    id: 3,
-    name: "Outlaw Territory",
-    status: "Maintenance",
-    players: 0,
-    maxPlayers: 60,
-    uptime: "97.2%",
-    cpu: 0,
-    memory: 12,
-    location: "EU Central",
-  },
-  {
-    id: 4,
-    name: "Desert Winds",
-    status: "Online",
-    players: 32,
-    maxPlayers: 50,
-    uptime: "99.1%",
-    cpu: 28,
-    memory: 45,
-    location: "US Central",
-  },
-]
-
 export function ServerManagement() {
+  const [servers, setServers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchServers = async () => {
+    try {
+      const response = await fetch('/api/admin/servers')
+      const data = await response.json()
+      setServers(data.servers || [])
+    } catch (error) {
+      console.error('Failed to fetch servers:', error)
+      // Fallback to mock data if API fails
+      setServers([
+        {
+          id: 1,
+          name: "Wild West RP",
+          status: "Online",
+          players: 89,
+          maxPlayers: 100,
+          uptime: "99.8%",
+          cpu: 45,
+          memory: 67,
+          location: "US East",
+          ip: process.env.NEXT_PUBLIC_REDM_SERVER_IP || "173.208.177.138",
+          port: process.env.NEXT_PUBLIC_REDM_SERVER_PORT || "30126"
+        }
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchServers()
+  }, [])
+
+  const removeServer = async (serverId: number, serverName: string) => {
+    if (confirm(`Are you sure you want to remove server "${serverName}"? This will remove it from the admin dashboard.`)) {
+      try {
+        const response = await fetch('/api/admin/servers', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: serverId })
+        })
+        if (response.ok) {
+          await fetchServers() // Refresh the list
+        } else {
+          alert('Failed to remove server')
+        }
+      } catch (error) {
+        console.error('Error removing server:', error)
+        alert('Failed to remove server')
+      }
+    }
+  }
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Online":
@@ -81,8 +89,32 @@ export function ServerManagement() {
   return (
     <Card className="bg-charcoal-light/80 border-amber-gold/20">
       <CardHeader>
-        <CardTitle className="text-amber-gold">Server Management</CardTitle>
-        <CardDescription className="text-sage-green/80">Monitor and control your RedM servers</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-amber-gold">Server Management</CardTitle>
+            <CardDescription className="text-sage-green/80">Monitor and control your RedM servers</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchServers}
+              disabled={loading}
+              className="border-amber-gold/30 text-amber-gold hover:bg-amber-gold/10"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-sage-green/30 text-sage-green hover:bg-sage-green/10"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Server
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -126,6 +158,15 @@ export function ServerManagement() {
                   >
                     <Pause className="h-4 w-4 mr-1" />
                     Stop
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeServer(server.id, server.name)}
+                    className="border-rust-red/30 text-rust-red hover:bg-rust-red/10 bg-transparent"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Remove
                   </Button>
                 </div>
               </div>
