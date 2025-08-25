@@ -11,6 +11,7 @@ import { Users, TrendingUp } from 'lucide-react'
 export function AnalyticsDashboard() {
   const [totalUsers, setTotalUsers] = useState<number | null>(null)
   const [redmStats, setRedmStats] = useState<{ count: number; maxPlayers: number; serverName: string } | null>(null)
+  const [redmPlayers, setRedmPlayers] = useState<any[]>([])
 
   useEffect(() => {
     fetch('/api/user')
@@ -19,6 +20,9 @@ export function AnalyticsDashboard() {
     fetch('/api/redm/players')
       .then(res => res.json())
       .then(data => setRedmStats(data))
+    fetch('/api/redm/playerdata')
+      .then(res => res.json())
+      .then(data => setRedmPlayers(data))
   }, [])
 
   return (
@@ -50,6 +54,37 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
       </div>
+      <Card className="bg-charcoal-light/80 border-amber-gold/20 mt-6">
+        <CardHeader>
+          <CardTitle className="text-amber-gold">RedM Synced Players</CardTitle>
+          <CardDescription className="text-sage-green/80">Live data from RedM server</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sage-green">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left">Username</th>
+                  <th className="px-4 py-2 text-left">Money</th>
+                  <th className="px-4 py-2 text-left">Job</th>
+                  <th className="px-4 py-2 text-left">Last Synced</th>
+                </tr>
+              </thead>
+              <tbody>
+                {redmPlayers.map(player => (
+                  <tr key={player.playerId}>
+                    <td className="px-4 py-2">{player.username}</td>
+                    <td className="px-4 py-2">${player.money}</td>
+                    <td className="px-4 py-2">{player.job}</td>
+                    <td className="px-4 py-2">{new Date(player.lastSynced).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {redmPlayers.length === 0 && <div className="text-sage-green/60 mt-4">No synced players found.</div>}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

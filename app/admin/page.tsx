@@ -23,7 +23,7 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-charcoal-light/50 border border-amber-gold/20">
+          <TabsList className="grid w-full grid-cols-4 bg-charcoal-light/50 border border-amber-gold/20">
             <TabsTrigger
               value="analytics"
               className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"

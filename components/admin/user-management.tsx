@@ -149,6 +149,16 @@ export function UserManagement() {
                   variant="ghost"
                   size="sm"
                   className="text-sage-green/60 hover:text-sage-green hover:bg-amber-gold/10"
+                  onClick={async () => {
+                    if (confirm(`Are you sure you want to delete user ${user.username}?`)) {
+                      await fetch('/api/user', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: user.id })
+                      })
+                      window.location.reload()
+                    }
+                  }}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
