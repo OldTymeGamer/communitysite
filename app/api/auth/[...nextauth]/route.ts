@@ -108,17 +108,19 @@ export const authOptions: NextAuthOptions = {
             counter++
           }
           
-          const newUser = new User({
+          const newUserData: any = {
             username,
-            email: profile?.email, // Can be undefined/null for Discord-only users
             discordId: profile?.id,
             discordUsername: profile?.username,
             discordAvatar: profile?.image_url || profile?.avatar_url,
             isDiscordConnected: true,
             isEmailVerified: profile?.email ? false : true,
             profilePicture: profile?.image_url || profile?.avatar_url,
-          })
-          
+          }
+          if (profile?.email) {
+            newUserData.email = profile.email
+          }
+          const newUser = new User(newUserData)
           await newUser.save()
           console.log("New Discord user created:", newUser.username)
           return true
