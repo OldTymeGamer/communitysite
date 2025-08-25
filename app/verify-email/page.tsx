@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -8,10 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageInner() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
-  
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const [username, setUsername] = useState('')
@@ -22,12 +21,10 @@ export default function VerifyEmailPage() {
       setMessage('No verification token provided')
       return
     }
-
     const verifyEmail = async () => {
       try {
         const response = await fetch(`/api/auth/verify-email?token=${token}`)
         const data = await response.json()
-
         if (response.ok) {
           setStatus('success')
           setMessage(data.message)
@@ -41,50 +38,32 @@ export default function VerifyEmailPage() {
         setMessage('Network error occurred')
       }
     }
-
     verifyEmail()
   }, [token])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-md">
         <Card className="bg-charcoal-light/80 backdrop-blur-sm border-amber-gold/20">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              {status === 'loading' && (
-                <Loader2 className="h-16 w-16 text-amber-gold animate-spin" />
-              )}
-              {status === 'success' && (
-                <CheckCircle className="h-16 w-16 text-green-400" />
-              )}
-              {status === 'error' && (
-                <XCircle className="h-16 w-16 text-red-400" />
-              )}
+              {status === 'loading' && (<Loader2 className="h-16 w-16 text-amber-gold animate-spin" />)}
+              {status === 'success' && (<CheckCircle className="h-16 w-16 text-green-400" />)}
+              {status === 'error' && (<XCircle className="h-16 w-16 text-red-400" />)}
             </div>
-            
             <CardTitle className="text-2xl font-rye text-amber-gold">
               {status === 'loading' && 'Verifying Email...'}
               {status === 'success' && 'Email Verified!'}
               {status === 'error' && 'Verification Failed'}
             </CardTitle>
-            
             <CardDescription className="text-sage-green">
               {status === 'loading' && 'Please wait while we verify your email address'}
               {status === 'success' && username && `Welcome to the community, ${username}!`}
               {status === 'error' && 'There was an issue verifying your email'}
             </CardDescription>
           </CardHeader>
-          
           <CardContent className="text-center space-y-4">
-            <p className="text-sage-green">
-              {message}
-            </p>
-            
+            <p className="text-sage-green">{message}</p>
             {status === 'success' && (
               <div className="space-y-3">
                 <p className="text-sage-green/80 text-sm">
@@ -97,7 +76,6 @@ export default function VerifyEmailPage() {
                 </Link>
               </div>
             )}
-            
             {status === 'error' && (
               <div className="space-y-3">
                 <p className="text-sage-green/80 text-sm">
@@ -117,7 +95,6 @@ export default function VerifyEmailPage() {
                 </div>
               </div>
             )}
-            
             {status === 'loading' && (
               <p className="text-sage-green/80 text-sm">
                 This may take a few moments...
@@ -127,5 +104,13 @@ export default function VerifyEmailPage() {
         </Card>
       </motion.div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailPageInner />
+    </Suspense>
   )
 }
