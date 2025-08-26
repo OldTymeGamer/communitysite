@@ -7,6 +7,30 @@
 
 A modern, feature-rich community website for RedM and FiveM servers. Built with Next.js 15, featuring Discord authentication, real-time server monitoring, and a customizable interface perfect for any gaming community.
 
+## 🚀 Quick Start (Linux Production)
+
+**One-command installation for Linux servers:**
+
+```bash
+# Clone the repository
+git clone https://github.com/OldTymeGamer/communitysite
+cd communitysite
+
+# Run the automated installer
+chmod +x install.sh
+sudo ./install.sh
+```
+
+The installer will:
+- ✅ Install all dependencies automatically
+- ✅ Guide you through configuration with prompts
+- ✅ Set up SSL certificates (optional)
+- ✅ Configure Nginx, PM2, and firewall
+- ✅ Get your site running in minutes!
+
+**For development setup, see the [Development Setup](#-development-setup) section below.**
+**For detailed installation instructions, see the [Installation Guide](./INSTALLATION.md).**
+
 ## ✨ Features
 
 ### 🎮 Core Features
@@ -32,7 +56,7 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 - **Email System** - Nodemailer integration for notifications
 - **SEO Optimized** - Meta tags, structured data, and performance optimized
 
-## 🚀 Quick Start
+## 💻 Development Setup
 
 ### Prerequisites
 
@@ -129,36 +153,68 @@ sudo npm install -g pm2
 
 ## 🚀 Production Deployment (Linux)
 
-### Interactive Quick Deploy
-For a guided deployment with automatic configuration:
+### Automated Installation Script (Recommended)
+For a complete automated installation with interactive configuration:
 
 ```bash
 # Make the script executable
-chmod +x deploy-interactive.sh
+chmod +x install.sh
 
-# Run the interactive deployment
-sudo ./deploy-interactive.sh
+# Run the installation script
+sudo ./install.sh
 ```
 
-The interactive script will:
-- ✅ Install all required system dependencies
-- ✅ Fix npm permission issues automatically
-- ✅ Guide you through environment configuration
-- ✅ Set up SSL certificates with Let's Encrypt
-- ✅ Configure Nginx reverse proxy
-- ✅ Set up PM2 process management
-- ✅ Configure firewall and security settings
-- ✅ Set up monitoring and backup scripts
+The installation script will:
+- ✅ **Auto-detect Linux distribution** and install required packages
+- ✅ **Interactive configuration** - prompts for all settings
+- ✅ **SSL setup with Let's Encrypt** - optional with domain prompts
+- ✅ **Environment configuration** - guided setup of all variables
+- ✅ **Nginx reverse proxy** - automatic configuration
+- ✅ **PM2 process management** - production-ready process handling
+- ✅ **Firewall configuration** - secure your server automatically
+- ✅ **Monitoring setup** - health checks and auto-restart
+- ✅ **Security hardening** - best practices applied
 
-### Manual Quick Deploy
-If you prefer the original automated script:
+**Supported Linux Distributions:**
+- Ubuntu 20.04+ / Debian 11+
+- CentOS 8+ / RHEL 8+ / Rocky Linux / AlmaLinux
+- Fedora
+- Arch Linux
 
+### Manual Installation
+If you prefer to install manually, follow the development setup and then configure Nginx, PM2, and SSL manually.
+
+### Installation Process Details
+
+The `install.sh` script will guide you through:
+
+1. **System Detection** - Automatically detects your Linux distribution
+2. **Package Installation** - Installs Node.js 18+, npm, Nginx, SSL tools
+3. **Configuration Prompts**:
+   - Application name and port
+   - SSL setup (optional)
+   - Domain configuration (if SSL enabled)
+   - All environment variables (Discord, MongoDB, SMTP, etc.)
+4. **SSL Certificate** - Automatic Let's Encrypt setup with domain validation
+5. **Service Configuration** - PM2 process manager and Nginx reverse proxy
+6. **Security Setup** - Firewall configuration and security headers
+7. **Monitoring** - Health check scripts and auto-restart functionality
+
+**Example Installation Flow:**
 ```bash
-chmod +x deploy.sh
-sudo ./deploy.sh
-```
+sudo ./install.sh
 
-**⚠️ Note**: The manual script requires you to edit configuration variables in the script before running.
+# You'll be prompted for:
+# - App name (default: communitysite)
+# - Port (default: 3000)
+# - SSL setup? (Y/n)
+# - Domain name (e.g., yourdomain.com)
+# - Admin email for SSL
+# - Discord OAuth credentials
+# - MongoDB connection string
+# - SMTP email settings
+# - Game server details
+```
 
 ## 📁 Project Structure
 
@@ -244,15 +300,42 @@ npm run db:migrate   # Run database migrations
 For detailed deployment instructions, see our comprehensive [Deployment Guide](./docs/DEPLOYMENT.md).
 
 ### 🔧 Troubleshooting
-If you encounter issues during deployment, check our [Deployment Troubleshooting Guide](./DEPLOYMENT-TROUBLESHOOTING.md) for solutions to common problems.
 
-### What the deployment scripts handle:
-- **System Dependencies**: Node.js, npm, Nginx, SSL certificates
-- **Security**: Firewall configuration, SSL/TLS setup
-- **Process Management**: PM2 or systemd service configuration
-- **Reverse Proxy**: Nginx configuration with proper headers
-- **Monitoring**: Health checks and log rotation
-- **Backups**: Automated backup scripts and cron jobs
+If you encounter issues during installation, check our [Deployment Troubleshooting Guide](./DEPLOYMENT-TROUBLESHOOTING.md) for solutions to common problems.
+
+**Common Installation Issues:**
+
+1. **Permission Errors**: Make sure to run `sudo ./install.sh`
+2. **Node.js Version**: Script automatically installs Node.js 18+ if needed
+3. **SSL Certificate Fails**: Ensure your domain points to the server IP
+4. **Firewall Issues**: Script configures UFW/firewalld automatically
+5. **PM2 Not Starting**: Check logs with `sudo -u www-data pm2 logs`
+
+**Post-Installation Commands:**
+```bash
+# Check application status
+sudo -u www-data pm2 status
+
+# View application logs
+sudo -u www-data pm2 logs communitysite
+
+# Restart application
+sudo -u www-data pm2 restart communitysite
+
+# Check Nginx status
+systemctl status nginx
+
+# View Nginx logs
+tail -f /var/log/nginx/access.log
+```
+
+### What the installation script handles:
+- **System Dependencies**: Node.js 18+, npm, Nginx, SSL certificates, build tools
+- **Security**: Firewall configuration, SSL/TLS setup, security headers
+- **Process Management**: PM2 process manager with auto-restart
+- **Reverse Proxy**: Nginx configuration with proper headers and caching
+- **Monitoring**: Health checks, log rotation, and system monitoring
+- **SSL Automation**: Let's Encrypt certificates with auto-renewal
 
 ## 📊 Monitoring & Analytics
 
