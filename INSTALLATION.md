@@ -2,10 +2,23 @@
 
 This guide provides detailed instructions for installing the Community Website on Linux servers.
 
-## 🚀 Quick Installation (Recommended)
+## 🚀 One-Command Installation (Recommended)
 
-The fastest way to get your community website running:
+The absolute fastest way to get your community website running:
 
+```bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh | sudo bash
+```
+
+This single command will:
+- ✅ Download the latest version automatically
+- ✅ Run the complete installation process
+- ✅ Guide you through configuration with prompts
+- ✅ Clean up temporary files when done
+
+## 🔄 Alternative Installation Methods
+
+### Method 1: Clone and Install
 ```bash
 # Clone the repository
 git clone https://github.com/OldTymeGamer/communitysite
@@ -16,7 +29,15 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
-The installer will guide you through the entire process with interactive prompts.
+### Method 2: Download and Install
+```bash
+# Download the installer directly
+wget https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh
+chmod +x quick-install.sh
+sudo ./quick-install.sh
+```
+
+All methods will guide you through the entire process with interactive prompts.
 
 ## 📋 What the Installer Does
 

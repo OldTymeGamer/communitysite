@@ -9,24 +9,37 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 
 ## 🚀 Quick Start (Linux Production)
 
-**One-command installation for Linux servers:**
+### **Installation Options**
 
+#### **Option 1: One-Command (Recommended)**
 ```bash
-# Clone the repository
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh | sudo bash
+```
+
+#### **Option 2: Clone and Install**
+```bash
 git clone https://github.com/OldTymeGamer/communitysite
 cd communitysite
-
-# Run the automated installer
 chmod +x install.sh
 sudo ./install.sh
 ```
 
-The installer will:
-- ✅ Install all dependencies automatically
-- ✅ Guide you through configuration with prompts
-- ✅ Set up SSL certificates (optional)
-- ✅ Configure Nginx, PM2, and firewall
-- ✅ Get your site running in minutes!
+#### **Option 3: Download and Install**
+```bash
+wget https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh
+chmod +x quick-install.sh
+sudo ./quick-install.sh
+```
+
+### **What All Methods Include:**
+- ✅ **Auto-download** latest version (Option 1 & 3)
+- ✅ **Dependency installation** - Node.js, Nginx, SSL tools
+- ✅ **Interactive configuration** - Guided setup prompts
+- ✅ **SSL certificates** - Optional Let's Encrypt setup
+- ✅ **Production services** - Nginx, PM2, firewall
+- ✅ **Security hardening** - Best practices applied
+- ✅ **Monitoring setup** - Health checks and auto-restart
+- ✅ **Clean installation** - No leftover files
 
 **For development setup, see the [Development Setup](#-development-setup) section below.**
 **For detailed installation instructions, see the [Installation Guide](./INSTALLATION.md).**
@@ -202,18 +215,22 @@ The `install.sh` script will guide you through:
 
 **Example Installation Flow:**
 ```bash
-sudo ./install.sh
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh | sudo bash
 
-# You'll be prompted for:
-# - App name (default: communitysite)
-# - Port (default: 3000)
-# - SSL setup? (Y/n)
-# - Domain name (e.g., yourdomain.com)
-# - Admin email for SSL
-# - Discord OAuth credentials
-# - MongoDB connection string
-# - SMTP email settings
-# - Game server details
+# The installer will automatically:
+# 1. Download the latest version
+# 2. Prompt you for configuration:
+#    - App name (default: communitysite)
+#    - Port (default: 3000)
+#    - SSL setup? (Y/n)
+#    - Domain name (e.g., yourdomain.com)
+#    - Admin email for SSL
+#    - Discord OAuth credentials
+#    - MongoDB connection string
+#    - SMTP email settings
+#    - Game server details
+# 3. Install and configure everything
+# 4. Clean up temporary files
 ```
 
 ## 📁 Project Structure
