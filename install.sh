@@ -300,7 +300,7 @@ collect_all_config() {
     prompt_input "SMTP Port" "587" "SMTP_PORT"
     prompt_input "SMTP Username/Email" "" "SMTP_USER"
     prompt_input "SMTP Password (App Password for Gmail)" "" "SMTP_PASS"
-    prompt_input "From Email Address" "${SMTP_USER:-your-email@example.com}" "SMTP_FROM"
+    prompt_input "From Email Address" "${SMTP_USER:-me@me.com}" "SMTP_FROM"
 }
 
 # Function to display configuration summary
@@ -511,9 +511,12 @@ deploy_application() {
     print_step "Deploying application files..."
     
     # Stop any existing services
-    systemctl stop nginx || true
-    systemctl stop "$APP_NAME" || true
-    sudo -u www-data bash -c "export PATH=\"/var/www/.npm-global/bin:\$PATH\" && pm2 stop $APP_NAME" || true
+    print_info "Stopping existing services..."
+    systemctl stop nginx 2>/dev/null || true
+    if systemctl is-active --quiet "$APP_NAME" 2>/dev/null; then
+        systemctl stop "$APP_NAME"
+    fi
+    sudo -u www-data bash -c "export PATH=\"/var/www/.npm-global/bin:\$PATH\" && pm2 stop $APP_NAME" 2>/dev/null || true
     
     # Copy application files
     cp -r ./* "$APP_DIR/"
@@ -544,6 +547,9 @@ deploy_application() {
 # Function to setup environment configuration
 setup_environment_config() {
     print_step "Setting up environment configuration..."
+    
+    # Ensure app directory exists
+    mkdir -p "$APP_DIR"
     
     # Create .env.local with all collected configuration
     cat > "$APP_DIR/.env.local" << EOF
@@ -778,56 +784,91 @@ configure_firewall() {
 # Function to validate DNS before SSL setup
 validate_dns() {
     if [ "$SETUP_SSL" = true ]; then
-        print_step "Validating DNS configuration..."
-        
-        # Get server's public IP
-        SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || curl -s icanhazip.com 2>/dev/null)
-        
-        if [ -z "$SERVER_IP" ]; then
-            print_warning "Could not determine server's public IP address"
-            print_info "Please ensure your domain $DOMAIN points to this server"
-            if ! prompt_yes_no "Continue with SSL setup anyway?" "n"; then
-                print_info "Skipping SSL setup. You can set it up manually later."
-                SETUP_SSL=false
-                return
-            fi
-        else
-            print_info "Server IP: $SERVER_IP"
+        while true; do
+            print_step "Validating DNS configuration..."
             
-            # Check if domain resolves to this server
-            DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null | tail -n1)
-            WWW_DOMAIN_IP=$(dig +short "www.$DOMAIN" 2>/dev/null | tail -n1)
+            # Get server's public IP
+            SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || curl -s icanhazip.com 2>/dev/null)
             
-            if [ -z "$DOMAIN_IP" ]; then
-                print_warning "Domain $DOMAIN does not resolve to any IP address"
-                print_info "Please ensure your DNS records are configured:"
-                print_info "  A record: $DOMAIN -> $SERVER_IP"
-                print_info "  A record: www.$DOMAIN -> $SERVER_IP"
+            if [ -z "$SERVER_IP" ]; then
+                print_warning "❌ Could not determine server's public IP address"
+                print_info "Please ensure your domain $DOMAIN points to this server"
                 if ! prompt_yes_no "Continue with SSL setup anyway?" "n"; then
                     print_info "Skipping SSL setup. You can set it up manually later."
                     SETUP_SSL=false
                     return
                 fi
-            elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
-                print_warning "Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
-                print_info "Please update your DNS records:"
-                print_info "  A record: $DOMAIN -> $SERVER_IP"
-                print_info "  A record: www.$DOMAIN -> $SERVER_IP"
-                if ! prompt_yes_no "Continue with SSL setup anyway?" "n"; then
-                    print_info "Skipping SSL setup. You can set it up manually later."
-                    SETUP_SSL=false
-                    return
-                fi
+                break
             else
-                print_status "DNS validation successful - $DOMAIN resolves to $SERVER_IP"
+                print_info "🌐 Server IP: $SERVER_IP"
                 
-                # Check www subdomain
+                # Check if domain resolves to this server
+                print_info "Checking DNS resolution..."
+                DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null | tail -n1)
+                WWW_DOMAIN_IP=$(dig +short "www.$DOMAIN" 2>/dev/null | tail -n1)
+                
+                DNS_SUCCESS=true
+                
+                if [ -z "$DOMAIN_IP" ]; then
+                    print_error "❌ Domain $DOMAIN does not resolve to any IP address"
+                    DNS_SUCCESS=false
+                elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+                    print_error "❌ Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
+                    DNS_SUCCESS=false
+                else
+                    print_status "✅ Domain $DOMAIN correctly resolves to $SERVER_IP"
+                fi
+                
                 if [ -n "$WWW_DOMAIN_IP" ] && [ "$WWW_DOMAIN_IP" != "$SERVER_IP" ]; then
-                    print_warning "www.$DOMAIN resolves to $WWW_DOMAIN_IP instead of $SERVER_IP"
-                    print_info "Consider updating: A record: www.$DOMAIN -> $SERVER_IP"
+                    print_warning "⚠️  www.$DOMAIN resolves to $WWW_DOMAIN_IP but server IP is $SERVER_IP"
+                    DNS_SUCCESS=false
+                elif [ -n "$WWW_DOMAIN_IP" ]; then
+                    print_status "✅ www.$DOMAIN correctly resolves to $SERVER_IP"
+                fi
+                
+                if [ "$DNS_SUCCESS" = true ]; then
+                    print_status "🎉 DNS validation successful! Ready for SSL setup."
+                    break
+                else
+                    echo ""
+                    print_warning "DNS configuration needs to be updated:"
+                    print_info "Please configure these DNS records with your domain provider:"
+                    print_info "  📍 A record: $DOMAIN -> $SERVER_IP"
+                    print_info "  📍 A record: www.$DOMAIN -> $SERVER_IP"
+                    echo ""
+                    print_info "DNS changes can take 5-60 minutes to propagate worldwide."
+                    echo ""
+                    
+                    echo "What would you like to do?"
+                    echo "1) Try DNS validation again (recommended after updating DNS)"
+                    echo "2) Continue with SSL setup anyway (may fail)"
+                    echo "3) Skip SSL setup for now"
+                    
+                    read -p "Choose option (1-3): " dns_choice
+                    
+                    case $dns_choice in
+                        1)
+                            print_info "Retrying DNS validation in 10 seconds..."
+                            sleep 10
+                            continue
+                            ;;
+                        2)
+                            print_warning "Continuing with SSL setup despite DNS issues..."
+                            break
+                            ;;
+                        3)
+                            print_info "Skipping SSL setup. You can set it up manually later with: sudo certbot --nginx"
+                            SETUP_SSL=false
+                            return
+                            ;;
+                        *)
+                            print_error "Invalid choice. Please enter 1, 2, or 3."
+                            continue
+                            ;;
+                    esac
                 fi
             fi
-        fi
+        done
     fi
 }
 
@@ -846,6 +887,23 @@ setup_ssl_certificate() {
         if certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos --email "$ADMIN_EMAIL"; then
             print_status "SSL certificate installed successfully"
             print_info "Your website is now available at: https://$DOMAIN"
+            
+            # Setup automatic certificate renewal
+            print_info "Setting up automatic SSL certificate renewal..."
+            
+            # Create renewal script
+            cat > "/usr/local/bin/renew-ssl-$APP_NAME.sh" << EOF
+#!/bin/bash
+# SSL Certificate Renewal Script for $APP_NAME
+certbot renew --quiet --nginx
+systemctl reload nginx
+EOF
+            chmod +x "/usr/local/bin/renew-ssl-$APP_NAME.sh"
+            
+            # Add to crontab for automatic renewal (runs twice daily)
+            (crontab -l 2>/dev/null; echo "0 */12 * * * /usr/local/bin/renew-ssl-$APP_NAME.sh") | crontab -
+            
+            print_status "SSL auto-renewal configured (checks twice daily)"
         else
             print_warning "SSL certificate installation failed."
             print_info "This is usually due to DNS not pointing to this server yet."
@@ -865,10 +923,39 @@ start_services() {
     sudo -u www-data bash -c "export PATH=\"/var/www/.npm-global/bin:\$PATH\" && pm2 start ecosystem.config.js"
     sudo -u www-data bash -c "export PATH=\"/var/www/.npm-global/bin:\$PATH\" && pm2 save"
     
-    # Setup PM2 startup
+    # Setup PM2 startup script
+    print_info "Configuring PM2 auto-start..."
     sudo -u www-data bash -c "export PATH=\"/var/www/.npm-global/bin:\$PATH\" && pm2 startup systemd -u www-data --hp /var/www" | grep -E '^sudo' | bash || true
     
-    # Start nginx
+    # Create systemd service as backup
+    print_info "Creating systemd service for $APP_NAME..."
+    cat > "/etc/systemd/system/$APP_NAME.service" << EOF
+[Unit]
+Description=$APP_NAME Community Website
+After=network.target
+Wants=network.target
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+WorkingDirectory=$APP_DIR
+Environment=PATH=/var/www/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/var/www
+ExecStart=/var/www/.npm-global/bin/pm2 start ecosystem.config.js --name $APP_NAME
+ExecReload=/var/www/.npm-global/bin/pm2 reload ecosystem.config.js --name $APP_NAME
+ExecStop=/var/www/.npm-global/bin/pm2 stop $APP_NAME
+PIDFile=/var/www/.pm2/pm2.pid
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    # Enable and start services
+    systemctl daemon-reload
+    systemctl enable "$APP_NAME"
     systemctl enable nginx
     systemctl start nginx
     
@@ -960,12 +1047,17 @@ display_completion_info() {
     echo "   View logs:       sudo -u www-data pm2 logs $APP_NAME"
     echo "   Restart app:     sudo -u www-data pm2 restart $APP_NAME"
     echo "   Restart nginx:   systemctl restart nginx"
+    echo "   Service status:  systemctl status $APP_NAME"
     
     echo ""
     print_status "✅ Configuration Complete:"
     echo "   - Environment file configured: $APP_DIR/.env.local"
     echo "   - All settings applied automatically"
     echo "   - Application ready to use"
+    echo "   - Auto-start enabled (survives server reboots)"
+    if [ "$SETUP_SSL" = true ]; then
+        echo "   - SSL certificates installed and auto-renewing"
+    fi
     echo ""
     
     print_info "🔧 Next Steps:"
@@ -1155,8 +1247,8 @@ main() {
     install_system_packages
     setup_application_environment
     install_pm2
-    deploy_application
     setup_environment_config
+    deploy_application
     configure_nginx
     setup_pm2_config
     configure_firewall
