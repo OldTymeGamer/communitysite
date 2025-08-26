@@ -247,6 +247,10 @@ collect_all_config() {
             exit 1
         fi
         
+        # Validate DNS immediately after domain entry
+        print_info "Checking DNS configuration for $DOMAIN..."
+        validate_dns_quick
+        
         # Set NEXTAUTH_URL based on SSL
         NEXTAUTH_URL="https://$DOMAIN"
     else
@@ -300,7 +304,7 @@ collect_all_config() {
     prompt_input "SMTP Port" "587" "SMTP_PORT"
     prompt_input "SMTP Username/Email" "" "SMTP_USER"
     prompt_input "SMTP Password (App Password for Gmail)" "" "SMTP_PASS"
-    prompt_input "From Email Address" "${SMTP_USER:-me@me.com}" "SMTP_FROM"
+    prompt_input "From Email Address" "" "SMTP_FROM"
 }
 
 # Function to display configuration summary
@@ -628,7 +632,7 @@ server {
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_proxied expired no-cache no-store private auth;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss;
     
     location / {
@@ -671,7 +675,7 @@ server {
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_proxied expired no-cache no-store private auth;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss;
     
     location / {
@@ -724,10 +728,11 @@ setup_pm2_config() {
 module.exports = {
   apps: [{
     name: '$APP_NAME',
-    script: 'server.js',
+    script: 'npm',
+    args: 'start',
     cwd: '$APP_DIR',
-    instances: 'max',
-    exec_mode: 'cluster',
+    instances: 1,
+    exec_mode: 'fork',
     env: {
       NODE_ENV: 'production',
       PORT: $APP_PORT
@@ -735,7 +740,9 @@ module.exports = {
     error_file: '/var/log/$APP_NAME/error.log',
     out_file: '/var/log/$APP_NAME/out.log',
     log_file: '/var/log/$APP_NAME/combined.log',
-    time: true
+    time: true,
+    watch: false,
+    max_memory_restart: '1G'
   }]
 }
 EOF
@@ -779,6 +786,43 @@ configure_firewall() {
             fi
             ;;
     esac
+}
+
+# Function to quickly validate DNS during configuration
+validate_dns_quick() {
+    # Get server's public IP
+    SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || curl -s icanhazip.com 2>/dev/null)
+    
+    if [ -z "$SERVER_IP" ]; then
+        print_warning "⚠️  Could not determine server's public IP address"
+        print_info "Please ensure your domain $DOMAIN points to this server before SSL setup"
+        return
+    fi
+    
+    print_info "🌐 Server IP: $SERVER_IP"
+    
+    # Check if domain resolves to this server
+    print_info "Checking DNS resolution..."
+    DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null | tail -n1)
+    
+    if [ -z "$DOMAIN_IP" ]; then
+        print_warning "⚠️  Domain $DOMAIN does not resolve to any IP address"
+        print_info "Please configure this DNS record with your domain provider:"
+        print_info "  📍 A record: $DOMAIN -> $SERVER_IP"
+        print_info "  📍 A record: www.$DOMAIN -> $SERVER_IP"
+        print_info "DNS changes can take 5-60 minutes to propagate."
+    elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+        print_warning "⚠️  Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
+        print_info "Please update your DNS records:"
+        print_info "  📍 A record: $DOMAIN -> $SERVER_IP"
+        print_info "  📍 A record: www.$DOMAIN -> $SERVER_IP"
+        print_info "DNS changes can take 5-60 minutes to propagate."
+    else
+        print_status "✅ Domain $DOMAIN correctly resolves to $SERVER_IP"
+        print_info "DNS configuration looks good!"
+    fi
+    
+    echo ""
 }
 
 # Function to validate DNS before SSL setup
@@ -932,22 +976,23 @@ start_services() {
     cat > "/etc/systemd/system/$APP_NAME.service" << EOF
 [Unit]
 Description=$APP_NAME Community Website
-After=network.target
+After=network.target mongodb.service
 Wants=network.target
 
 [Service]
-Type=forking
+Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=$APP_DIR
 Environment=PATH=/var/www/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/var/www
-ExecStart=/var/www/.npm-global/bin/pm2 start ecosystem.config.js --name $APP_NAME
-ExecReload=/var/www/.npm-global/bin/pm2 reload ecosystem.config.js --name $APP_NAME
-ExecStop=/var/www/.npm-global/bin/pm2 stop $APP_NAME
-PIDFile=/var/www/.pm2/pm2.pid
+Environment=NODE_ENV=production
+Environment=PORT=$APP_PORT
+ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=10s
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
@@ -1014,6 +1059,82 @@ EOF
     (crontab -l 2>/dev/null; echo "*/5 * * * * /usr/local/bin/$APP_NAME-monitor.sh") | crontab -
     
     print_status "Monitoring script installed"
+}
+
+# Function to validate installation
+validate_installation() {
+    print_step "Validating installation..."
+    
+    local validation_failed=false
+    
+    # Check if application directory exists
+    if [ ! -d "$APP_DIR" ]; then
+        print_error "Application directory $APP_DIR does not exist"
+        validation_failed=true
+    fi
+    
+    # Check if .env.local exists and has required variables
+    if [ ! -f "$APP_DIR/.env.local" ]; then
+        print_error "Environment file $APP_DIR/.env.local does not exist"
+        validation_failed=true
+    else
+        # Check for required environment variables
+        local required_vars=("NEXTAUTH_URL" "NEXTAUTH_SECRET" "MONGODB_URI")
+        for var in "${required_vars[@]}"; do
+            if ! grep -q "^$var=" "$APP_DIR/.env.local"; then
+                print_error "Required environment variable $var is missing from .env.local"
+                validation_failed=true
+            fi
+        done
+    fi
+    
+    # Check if package.json exists
+    if [ ! -f "$APP_DIR/package.json" ]; then
+        print_error "package.json not found in $APP_DIR"
+        validation_failed=true
+    fi
+    
+    # Check if node_modules exists (dependencies installed)
+    if [ ! -d "$APP_DIR/node_modules" ]; then
+        print_error "node_modules directory not found - dependencies may not be installed"
+        validation_failed=true
+    fi
+    
+    # Check if .next build directory exists
+    if [ ! -d "$APP_DIR/.next" ]; then
+        print_error ".next build directory not found - application may not be built"
+        validation_failed=true
+    fi
+    
+    # Check if PM2 ecosystem config exists
+    if [ ! -f "$APP_DIR/ecosystem.config.js" ]; then
+        print_error "PM2 ecosystem configuration not found"
+        validation_failed=true
+    fi
+    
+    # Check if Nginx configuration exists and is valid
+    if [ ! -f "/etc/nginx/sites-available/$APP_NAME" ]; then
+        print_error "Nginx configuration not found"
+        validation_failed=true
+    else
+        if ! nginx -t >/dev/null 2>&1; then
+            print_error "Nginx configuration is invalid"
+            validation_failed=true
+        fi
+    fi
+    
+    # Check if systemd service exists
+    if [ ! -f "/etc/systemd/system/$APP_NAME.service" ]; then
+        print_error "Systemd service configuration not found"
+        validation_failed=true
+    fi
+    
+    if [ "$validation_failed" = true ]; then
+        print_error "Installation validation failed. Please check the errors above."
+        exit 1
+    else
+        print_status "Installation validation passed"
+    fi
 }
 
 # Function to display final information
@@ -1256,6 +1377,7 @@ main() {
     setup_ssl_certificate
     start_services
     setup_monitoring
+    validate_installation
     display_completion_info
 }
 
