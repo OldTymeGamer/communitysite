@@ -10,6 +10,7 @@ Group=www-data
 WorkingDirectory=/var/www/losttrailrp
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=PATH=/var/www/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/usr/bin/node server.js
 Restart=on-failure
 RestartSec=10

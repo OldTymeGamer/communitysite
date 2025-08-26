@@ -31,7 +31,7 @@ echo "📦 Installing required packages..."
 apt install -y nginx nodejs npm git curl ufw certbot python3-certbot-nginx
 
 # Install PM2 for process management (alternative to systemd)
-npm install -g pm2
+sudo -u $USER bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && npm install -g pm2'
 
 # Create application directory
 echo "📁 Creating application directory..."
@@ -49,11 +49,21 @@ echo "📋 Copying application files..."
 cp -r ./* $APP_DIR/
 chown -R $USER:$GROUP $APP_DIR
 
+# Fix npm permissions
+echo "🔧 Fixing npm permissions..."
+mkdir -p /var/www/.npm-global
+chown -R $USER:$GROUP /var/www/.npm-global
+sudo -u $USER npm config set prefix '/var/www/.npm-global'
+if [ -d "/var/www/.npm" ]; then
+    chown -R $USER:$GROUP /var/www/.npm
+fi
+sudo -u $USER bash -c 'echo "prefix=/var/www/.npm-global" > /var/www/.npmrc'
+
 # Install dependencies and build
 echo "🔨 Installing dependencies and building application..."
 cd $APP_DIR
-sudo -u $USER npm install
-sudo -u $USER npm run build
+sudo -u $USER bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && npm install'
+sudo -u $USER bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && npm run build'
 
 # Copy Nginx configuration
 echo "🌐 Configuring Nginx..."
@@ -119,9 +129,9 @@ EOF
 
 # Setup PM2 startup (alternative process manager)
 echo "🔄 Setting up PM2 startup..."
-sudo -u $USER pm2 start $APP_DIR/ecosystem.config.js
-sudo -u $USER pm2 save
-pm2 startup systemd -u $USER --hp /home/$USER
+sudo -u $USER bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && pm2 start '$APP_DIR'/ecosystem.config.js'
+sudo -u $USER bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && pm2 save'
+sudo -u $USER bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && pm2 startup systemd -u '$USER' --hp /var/www'
 
 # Create ecosystem.config.js for PM2
 cat > $APP_DIR/ecosystem.config.js << EOF

@@ -35,10 +35,38 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
-- MongoDB database (You can use MongoDB here: https://www.mongodb.com)
-- Discord application (for OAuth)
-- SMTP server (for emails)
+
+#### For Development (Windows/Mac/Linux)
+- **Node.js 18+** - [Download here](https://nodejs.org/)
+- **npm** (comes with Node.js) or **yarn**
+- **MongoDB database** - [MongoDB Atlas](https://www.mongodb.com) (cloud) or local installation
+- **Discord application** (for OAuth) - [Discord Developer Portal](https://discord.com/developers/applications)
+- **SMTP server** (for emails) - Gmail, SendGrid, or similar
+
+#### For Linux Production Deployment
+**Required System Packages:**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install -y nodejs npm nginx git curl ufw certbot python3-certbot-nginx
+
+# CentOS/RHEL/Rocky Linux
+sudo yum install -y nodejs npm nginx git curl firewalld certbot python3-certbot-nginx
+
+# Arch Linux
+sudo pacman -S nodejs npm nginx git curl ufw certbot certbot-nginx
+```
+
+**Required Global npm Packages:**
+```bash
+sudo npm install -g pm2
+```
+
+**System Requirements:**
+- **OS**: Ubuntu 20.04+, Debian 11+, CentOS 8+, or similar
+- **RAM**: Minimum 1GB, Recommended 2GB+
+- **Storage**: Minimum 5GB free space
+- **Network**: Port 80 (HTTP) and 443 (HTTPS) accessible
 
 ### Installation
 
@@ -98,6 +126,39 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 5. **Open your browser**
    
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🚀 Production Deployment (Linux)
+
+### Interactive Quick Deploy
+For a guided deployment with automatic configuration:
+
+```bash
+# Make the script executable
+chmod +x deploy-interactive.sh
+
+# Run the interactive deployment
+sudo ./deploy-interactive.sh
+```
+
+The interactive script will:
+- ✅ Install all required system dependencies
+- ✅ Fix npm permission issues automatically
+- ✅ Guide you through environment configuration
+- ✅ Set up SSL certificates with Let's Encrypt
+- ✅ Configure Nginx reverse proxy
+- ✅ Set up PM2 process management
+- ✅ Configure firewall and security settings
+- ✅ Set up monitoring and backup scripts
+
+### Manual Quick Deploy
+If you prefer the original automated script:
+
+```bash
+chmod +x deploy.sh
+sudo ./deploy.sh
+```
+
+**⚠️ Note**: The manual script requires you to edit configuration variables in the script before running.
 
 ## 📁 Project Structure
 
@@ -178,29 +239,20 @@ npm run db:migrate   # Run database migrations
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 🚀 Deployment
+## 📚 Advanced Deployment
 
-For production deployment on Ubuntu/Debian servers with Nginx, see our comprehensive [Deployment Guide](./docs/DEPLOYMENT.md).
+For detailed deployment instructions, see our comprehensive [Deployment Guide](./docs/DEPLOYMENT.md).
 
-### System Requirements
-- Ubuntu 20.04+ or Debian 11+
-- Node.js 18+
-- Nginx (for reverse proxy)
-- MongoDB 5.0+
-- SSL certificate (Let's Encrypt recommended)
+### 🔧 Troubleshooting
+If you encounter issues during deployment, check our [Deployment Troubleshooting Guide](./DEPLOYMENT-TROUBLESHOOTING.md) for solutions to common problems.
 
-### Quick Deploy
-```bash
-chmod +x deploy.sh
-sudo ./deploy.sh
-```
-
-The deployment script automatically handles:
-- System dependencies installation
-- Nginx configuration with SSL
-- Systemd service setup
-- Firewall configuration
-- Monitoring and backup setup
+### What the deployment scripts handle:
+- **System Dependencies**: Node.js, npm, Nginx, SSL certificates
+- **Security**: Firewall configuration, SSL/TLS setup
+- **Process Management**: PM2 or systemd service configuration
+- **Reverse Proxy**: Nginx configuration with proper headers
+- **Monitoring**: Health checks and log rotation
+- **Backups**: Automated backup scripts and cron jobs
 
 ## 📊 Monitoring & Analytics
 
