@@ -36,7 +36,7 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 
 ### Prerequisites
 - Node.js 18+ 
-- MongoDB database
+- MongoDB database (You can use MongoDB here: https://www.mongodb.com)
 - Discord application (for OAuth)
 - SMTP server (for emails)
 
