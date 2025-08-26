@@ -111,10 +111,18 @@ main() {
     # Make install script executable
     chmod +x install.sh
     
-    # Run the main installation script
+    # Run the main installation script with proper stdin
     print_header "Starting Installation Process"
     echo ""
-    ./install.sh
+    
+    # Check if we have a TTY available
+    if [ -t 0 ]; then
+        # We have stdin available, run normally
+        ./install.sh
+    else
+        # We're being piped, redirect from TTY
+        ./install.sh < /dev/tty
+    fi
     
     # Clean up
     print_info "Cleaning up temporary files..."

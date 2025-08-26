@@ -7,7 +7,7 @@ This guide provides detailed instructions for installing the Community Website o
 The absolute fastest way to get your community website running:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install-wrapper.sh | sudo bash
 ```
 
 This single command will:

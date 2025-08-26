@@ -13,7 +13,12 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 
 #### **Option 1: One-Command (Recommended)**
 ```bash
-curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install-wrapper.sh | sudo bash
+```
+
+*Alternative one-command method:*
+```bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh -o install-temp.sh && sudo bash install-temp.sh && rm install-temp.sh
 ```
 
 #### **Option 2: Clone and Install**
