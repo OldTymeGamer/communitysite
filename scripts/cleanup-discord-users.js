@@ -4,7 +4,7 @@
 const mongoose = require('mongoose')
 
 // Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://website:XXyLicYnLo4jGGCI@cluster0.cjdeol2.mongodb.net/redm-community?retryWrites=true&w=majority'
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/community'
 
 async function cleanup() {
   try {
