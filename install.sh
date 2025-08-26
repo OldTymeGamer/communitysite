@@ -9,8 +9,8 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
+BLUE='\033[1;36m'    # Bright cyan instead of dark blue
+PURPLE='\033[1;35m'  # Bright purple
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
@@ -249,7 +249,7 @@ collect_all_config() {
         
         # Validate DNS immediately after domain entry
         print_info "Checking DNS configuration for $DOMAIN..."
-        validate_dns_quick
+        validate_dns_with_retry
         
         # Set NEXTAUTH_URL based on SSL
         NEXTAUTH_URL="https://$DOMAIN"
@@ -281,18 +281,11 @@ collect_all_config() {
     prompt_input "Discord Guild ID (your server ID)" "" "DISCORD_GUILD_ID"
     prompt_input "Discord Admin Role IDs (comma-separated)" "" "DISCORD_ADMIN_ROLE_IDS"
     
-    # Game Server Configuration
-    echo ""
-    print_step "Game Server Configuration (RedM/FiveM) - Optional"
-    print_info "Leave blank if you don't have a game server yet"
-    prompt_input "Game Server IP (optional)" "" "GAME_SERVER_IP"
-    if [ -n "$GAME_SERVER_IP" ]; then
-        prompt_input "Game Server Port" "30120" "GAME_SERVER_PORT"
-        prompt_input "Server API Key (optional)" "" "SERVER_API_KEY"
-    else
-        GAME_SERVER_PORT=""
-        SERVER_API_KEY=""
-    fi
+    # Game Server Configuration - Removed from installer
+    # Servers will be managed through the admin panel
+    GAME_SERVER_IP=""
+    GAME_SERVER_PORT=""
+    SERVER_API_KEY=""
     
     # Email Configuration
     echo ""
@@ -788,41 +781,63 @@ configure_firewall() {
     esac
 }
 
-# Function to quickly validate DNS during configuration
-validate_dns_quick() {
-    # Get server's public IP
-    SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || curl -s icanhazip.com 2>/dev/null)
-    
-    if [ -z "$SERVER_IP" ]; then
-        print_warning "⚠️  Could not determine server's public IP address"
-        print_info "Please ensure your domain $DOMAIN points to this server before SSL setup"
-        return
-    fi
-    
-    print_info "🌐 Server IP: $SERVER_IP"
-    
-    # Check if domain resolves to this server
-    print_info "Checking DNS resolution..."
-    DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null | tail -n1)
-    
-    if [ -z "$DOMAIN_IP" ]; then
-        print_warning "⚠️  Domain $DOMAIN does not resolve to any IP address"
-        print_info "Please configure this DNS record with your domain provider:"
-        print_info "  📍 A record: $DOMAIN -> $SERVER_IP"
-        print_info "  📍 A record: www.$DOMAIN -> $SERVER_IP"
-        print_info "DNS changes can take 5-60 minutes to propagate."
-    elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
-        print_warning "⚠️  Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
-        print_info "Please update your DNS records:"
-        print_info "  📍 A record: $DOMAIN -> $SERVER_IP"
-        print_info "  📍 A record: www.$DOMAIN -> $SERVER_IP"
-        print_info "DNS changes can take 5-60 minutes to propagate."
-    else
-        print_status "✅ Domain $DOMAIN correctly resolves to $SERVER_IP"
-        print_info "DNS configuration looks good!"
-    fi
-    
-    echo ""
+# Function to validate DNS with retry and stop installation if needed
+validate_dns_with_retry() {
+    while true; do
+        # Get server's public IP
+        SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || curl -s icanhazip.com 2>/dev/null)
+        
+        if [ -z "$SERVER_IP" ]; then
+            print_warning "Could not determine server's public IP address"
+            print_info "Please ensure your domain $DOMAIN points to this server before SSL setup"
+            return
+        fi
+        
+        print_info "Server IP: $SERVER_IP"
+        
+        # Check if domain resolves to this server
+        print_info "Checking DNS resolution..."
+        DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null | tail -n1)
+        
+        if [ -z "$DOMAIN_IP" ]; then
+            print_warning "Domain $DOMAIN does not resolve to any IP address"
+            print_info "Please configure this DNS record with your domain provider:"
+            print_info "  A record: $DOMAIN -> $SERVER_IP"
+            print_info "  A record: www.$DOMAIN -> $SERVER_IP"
+            print_info "DNS changes can take 5-60 minutes to propagate."
+            echo ""
+            
+            if prompt_yes_no "Try DNS validation again?" "y"; then
+                print_info "Waiting 10 seconds before retry..."
+                sleep 10
+                continue
+            else
+                print_error "DNS validation failed. Installation cannot continue without proper DNS configuration."
+                exit 1
+            fi
+        elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+            print_warning "Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
+            print_info "Please update your DNS records:"
+            print_info "  A record: $DOMAIN -> $SERVER_IP"
+            print_info "  A record: www.$DOMAIN -> $SERVER_IP"
+            print_info "DNS changes can take 5-60 minutes to propagate."
+            echo ""
+            
+            if prompt_yes_no "Try DNS validation again?" "y"; then
+                print_info "Waiting 10 seconds before retry..."
+                sleep 10
+                continue
+            else
+                print_error "DNS validation failed. Installation cannot continue without proper DNS configuration."
+                exit 1
+            fi
+        else
+            print_status "Domain $DOMAIN correctly resolves to $SERVER_IP"
+            print_info "DNS configuration verified!"
+            echo ""
+            break
+        fi
+    done
 }
 
 # Function to validate DNS before SSL setup
