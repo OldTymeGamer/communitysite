@@ -153,7 +153,7 @@ install_system_packages() {
             apt install -y nodejs
             
             # Install other packages
-            apt install -y nginx git ufw certbot python3-certbot-nginx build-essential
+            apt install -y nginx git ufw certbot python3-certbot-nginx build-essential dnsutils openssl
             ;;
             
         redhat)
@@ -173,13 +173,13 @@ install_system_packages() {
             $PKG_MANAGER install -y nodejs
             
             # Install other packages
-            $PKG_MANAGER install -y nginx git firewalld certbot python3-certbot-nginx gcc-c++ make
+            $PKG_MANAGER install -y nginx git firewalld certbot python3-certbot-nginx gcc-c++ make bind-utils openssl
             ;;
             
         arch)
             print_info "Installing packages for Arch Linux..."
             pacman -Syu --noconfirm
-            pacman -S --noconfirm nodejs npm nginx git ufw certbot certbot-nginx base-devel
+            pacman -S --noconfirm nodejs npm nginx git ufw certbot certbot-nginx base-devel bind openssl
             ;;
             
         *)
@@ -203,23 +203,40 @@ install_system_packages() {
     print_info "npm version: $(npm --version)"
 }
 
-# Function to collect configuration from user
+# Function to collect all configuration from user
 collect_configuration() {
+    while true; do
+        collect_all_config
+        display_config_summary
+        
+        if prompt_yes_no "Is all configuration correct?" "y"; then
+            break
+        else
+            modify_configuration
+        fi
+    done
+}
+
+# Function to collect all configuration
+collect_all_config() {
     print_header "Configuration Setup"
     
     echo ""
     print_info "Let's configure your community website installation."
+    print_info "You'll be prompted for all required settings."
     echo ""
     
-    # Basic configuration
+    # Basic application configuration
+    print_step "Basic Application Settings"
     prompt_input "Application name" "$DEFAULT_APP_NAME" "APP_NAME"
     prompt_input "Application port" "$DEFAULT_PORT" "APP_PORT"
     
     # Derived paths
     APP_DIR="/var/www/$APP_NAME"
     
+    # SSL Configuration
     echo ""
-    print_info "SSL Certificate Setup (recommended for production)"
+    print_step "SSL Certificate Setup (recommended for production)"
     if prompt_yes_no "Would you like to set up SSL with Let's Encrypt?" "y"; then
         SETUP_SSL=true
         prompt_input "Domain name (without www, e.g., example.com)" "" "DOMAIN"
@@ -229,26 +246,169 @@ collect_configuration() {
             print_error "Domain and email are required for SSL setup"
             exit 1
         fi
-    fi
-    
-    echo ""
-    print_info "Configuration Summary:"
-    echo "  App Name: $APP_NAME"
-    echo "  App Port: $APP_PORT"
-    echo "  App Directory: $APP_DIR"
-    if [ "$SETUP_SSL" = true ]; then
-        echo "  Domain: $DOMAIN"
-        echo "  SSL: Enabled"
-        echo "  Admin Email: $ADMIN_EMAIL"
+        
+        # Set NEXTAUTH_URL based on SSL
+        NEXTAUTH_URL="https://$DOMAIN"
     else
-        echo "  SSL: Disabled"
+        SETUP_SSL=false
+        NEXTAUTH_URL="http://localhost:$APP_PORT"
     fi
+    
+    # Generate NextAuth secret
+    NEXTAUTH_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+    
+    # Database Configuration
+    echo ""
+    print_step "Database Configuration"
+    print_info "MongoDB connection string (local or cloud like MongoDB Atlas)"
+    print_info "Examples:"
+    print_info "  Local: mongodb://localhost:27017/community"
+    print_info "  Atlas: mongodb+srv://username:password@cluster.mongodb.net/community"
+    prompt_input "MongoDB URI" "mongodb://localhost:27017/community" "MONGODB_URI"
+    
+    # Discord Configuration
+    echo ""
+    print_step "Discord OAuth & Bot Configuration"
+    print_info "You'll need to create a Discord application at: https://discord.com/developers/applications"
+    echo ""
+    prompt_input "Discord Client ID" "" "DISCORD_CLIENT_ID"
+    prompt_input "Discord Client Secret" "" "DISCORD_CLIENT_SECRET"
+    prompt_input "Discord Bot Token" "" "DISCORD_BOT_TOKEN"
+    prompt_input "Discord Guild ID (your server ID)" "" "DISCORD_GUILD_ID"
+    prompt_input "Discord Admin Role IDs (comma-separated)" "" "DISCORD_ADMIN_ROLE_IDS"
+    
+    # Game Server Configuration
+    echo ""
+    print_step "Game Server Configuration (RedM/FiveM)"
+    prompt_input "Game Server IP" "" "GAME_SERVER_IP"
+    prompt_input "Game Server Port" "30120" "GAME_SERVER_PORT"
+    prompt_input "Server API Key (if required)" "" "SERVER_API_KEY"
+    
+    # Email Configuration
+    echo ""
+    print_step "Email Configuration (SMTP)"
+    print_info "For Gmail: Use smtp.gmail.com with an App Password (not your regular password)"
+    print_info "Other providers: SendGrid, Mailgun, Outlook, etc."
+    echo ""
+    prompt_input "SMTP Host" "smtp.gmail.com" "SMTP_HOST"
+    prompt_input "SMTP Port" "587" "SMTP_PORT"
+    prompt_input "SMTP Username/Email" "" "SMTP_USER"
+    prompt_input "SMTP Password (App Password for Gmail)" "" "SMTP_PASS"
+    prompt_input "From Email Address" "$SMTP_USER" "SMTP_FROM"
+}
+
+# Function to display configuration summary
+display_config_summary() {
+    echo ""
+    print_header "Configuration Summary"
     echo ""
     
-    if ! prompt_yes_no "Is this configuration correct?" "y"; then
-        print_info "Please run the script again with correct information."
-        exit 1
+    print_info "📋 Application Settings:"
+    echo "  1. App Name: $APP_NAME"
+    echo "  2. App Port: $APP_PORT"
+    echo "  3. App Directory: $APP_DIR"
+    echo "  4. NextAuth URL: $NEXTAUTH_URL"
+    echo "  5. NextAuth Secret: ${NEXTAUTH_SECRET:0:20}... (generated)"
+    
+    echo ""
+    print_info "🌐 SSL & Domain:"
+    if [ "$SETUP_SSL" = true ]; then
+        echo "  6. SSL: Enabled"
+        echo "  7. Domain: $DOMAIN"
+        echo "  8. Admin Email: $ADMIN_EMAIL"
+    else
+        echo "  6. SSL: Disabled"
+        echo "  7. Domain: Not configured"
+        echo "  8. Admin Email: Not configured"
     fi
+    
+    echo ""
+    print_info "🗄️ Database:"
+    echo "  9. MongoDB URI: $MONGODB_URI"
+    
+    echo ""
+    print_info "🎮 Discord Configuration:"
+    echo "  10. Client ID: ${DISCORD_CLIENT_ID:-'Not set'}"
+    echo "  11. Client Secret: ${DISCORD_CLIENT_SECRET:0:10}... (hidden)"
+    echo "  12. Bot Token: ${DISCORD_BOT_TOKEN:0:10}... (hidden)"
+    echo "  13. Guild ID: ${DISCORD_GUILD_ID:-'Not set'}"
+    echo "  14. Admin Role IDs: ${DISCORD_ADMIN_ROLE_IDS:-'Not set'}"
+    
+    echo ""
+    print_info "🎯 Game Server:"
+    echo "  15. Server IP: ${GAME_SERVER_IP:-'Not set'}"
+    echo "  16. Server Port: ${GAME_SERVER_PORT:-'Not set'}"
+    echo "  17. API Key: ${SERVER_API_KEY:0:10}... (hidden)"
+    
+    echo ""
+    print_info "📧 Email (SMTP):"
+    echo "  18. SMTP Host: ${SMTP_HOST:-'Not set'}"
+    echo "  19. SMTP Port: ${SMTP_PORT:-'Not set'}"
+    echo "  20. SMTP User: ${SMTP_USER:-'Not set'}"
+    echo "  21. SMTP Password: ${SMTP_PASS:0:5}... (hidden)"
+    echo "  22. From Email: ${SMTP_FROM:-'Not set'}"
+    
+    echo ""
+}
+
+# Function to modify specific configuration items
+modify_configuration() {
+    echo ""
+    print_info "Which setting would you like to change?"
+    print_info "Enter the number (1-22) or 'done' to finish:"
+    
+    while true; do
+        read -p "Setting to change (1-22 or 'done'): " choice
+        
+        case $choice in
+            1) prompt_input "Application name" "$APP_NAME" "APP_NAME"; APP_DIR="/var/www/$APP_NAME" ;;
+            2) prompt_input "Application port" "$APP_PORT" "APP_PORT" ;;
+            3) print_info "App directory is automatically set based on app name" ;;
+            4) print_info "NextAuth URL is automatically set based on SSL/domain configuration" ;;
+            5) 
+                if prompt_yes_no "Generate new NextAuth secret?" "y"; then
+                    NEXTAUTH_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+                    print_info "New secret generated"
+                fi
+                ;;
+            6) 
+                if prompt_yes_no "Enable SSL?" "$SETUP_SSL"; then
+                    SETUP_SSL=true
+                    if [ -z "$DOMAIN" ]; then
+                        prompt_input "Domain name" "" "DOMAIN"
+                    fi
+                    if [ -z "$ADMIN_EMAIL" ]; then
+                        prompt_input "Admin email" "" "ADMIN_EMAIL"
+                    fi
+                    NEXTAUTH_URL="https://$DOMAIN"
+                else
+                    SETUP_SSL=false
+                    NEXTAUTH_URL="http://localhost:$APP_PORT"
+                fi
+                ;;
+            7) prompt_input "Domain name" "$DOMAIN" "DOMAIN"; NEXTAUTH_URL="https://$DOMAIN" ;;
+            8) prompt_input "Admin email" "$ADMIN_EMAIL" "ADMIN_EMAIL" ;;
+            9) prompt_input "MongoDB URI" "$MONGODB_URI" "MONGODB_URI" ;;
+            10) prompt_input "Discord Client ID" "$DISCORD_CLIENT_ID" "DISCORD_CLIENT_ID" ;;
+            11) prompt_input "Discord Client Secret" "$DISCORD_CLIENT_SECRET" "DISCORD_CLIENT_SECRET" ;;
+            12) prompt_input "Discord Bot Token" "$DISCORD_BOT_TOKEN" "DISCORD_BOT_TOKEN" ;;
+            13) prompt_input "Discord Guild ID" "$DISCORD_GUILD_ID" "DISCORD_GUILD_ID" ;;
+            14) prompt_input "Discord Admin Role IDs" "$DISCORD_ADMIN_ROLE_IDS" "DISCORD_ADMIN_ROLE_IDS" ;;
+            15) prompt_input "Game Server IP" "$GAME_SERVER_IP" "GAME_SERVER_IP" ;;
+            16) prompt_input "Game Server Port" "$GAME_SERVER_PORT" "GAME_SERVER_PORT" ;;
+            17) prompt_input "Server API Key" "$SERVER_API_KEY" "SERVER_API_KEY" ;;
+            18) prompt_input "SMTP Host" "$SMTP_HOST" "SMTP_HOST" ;;
+            19) prompt_input "SMTP Port" "$SMTP_PORT" "SMTP_PORT" ;;
+            20) prompt_input "SMTP User" "$SMTP_USER" "SMTP_USER" ;;
+            21) prompt_input "SMTP Password" "$SMTP_PASS" "SMTP_PASS" ;;
+            22) prompt_input "From Email" "$SMTP_FROM" "SMTP_FROM" ;;
+            done|DONE) break ;;
+            *) print_error "Invalid choice. Enter 1-22 or 'done'" ;;
+        esac
+        
+        echo ""
+        print_info "Setting updated. Enter another number or 'done' to finish:"
+    done
 }
 
 # Function to setup application user and directories
@@ -284,6 +444,19 @@ setup_application_environment() {
     if [ -d "/var/www/.npm" ]; then
         chown -R www-data:www-data /var/www/.npm
     fi
+    
+    # Fix npm cache permissions (common issue)
+    if [ -d "/root/.npm" ]; then
+        print_info "Fixing npm cache permissions..."
+        chown -R www-data:www-data /root/.npm 2>/dev/null || true
+    fi
+    
+    # Create npm cache directory for www-data
+    mkdir -p /var/www/.npm
+    chown -R www-data:www-data /var/www/.npm
+    
+    # Set npm cache directory for www-data
+    sudo -u www-data npm config set cache '/var/www/.npm'
     
     print_status "Application environment configured"
 }
@@ -327,24 +500,46 @@ deploy_application() {
 setup_environment_config() {
     print_step "Setting up environment configuration..."
     
-    if [ -f "$APP_DIR/.env.example" ]; then
-        cp "$APP_DIR/.env.example" "$APP_DIR/.env.local"
-        chown www-data:www-data "$APP_DIR/.env.local"
-        
-        print_info "Environment file created at $APP_DIR/.env.local"
-        print_warning "You'll need to configure the following in .env.local:"
-        echo "  - Discord OAuth credentials"
-        echo "  - MongoDB connection string"
-        echo "  - SMTP email settings"
-        echo "  - Game server details"
-        echo ""
-        
-        if prompt_yes_no "Would you like to edit the environment file now?" "y"; then
-            ${EDITOR:-nano} "$APP_DIR/.env.local"
-        fi
-    else
-        print_warning "No .env.example found. You'll need to create .env.local manually."
-    fi
+    # Create .env.local with all collected configuration
+    cat > "$APP_DIR/.env.local" << EOF
+# NextAuth Configuration
+NEXTAUTH_URL=$NEXTAUTH_URL
+NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+
+# Database
+MONGODB_URI=$MONGODB_URI
+
+# Discord OAuth & Bot Configuration
+DISCORD_CLIENT_ID=$DISCORD_CLIENT_ID
+DISCORD_CLIENT_SECRET=$DISCORD_CLIENT_SECRET
+DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN
+DISCORD_GUILD_ID=$DISCORD_GUILD_ID
+DISCORD_ADMIN_ROLE_IDS=$DISCORD_ADMIN_ROLE_IDS
+
+# Game Server Configuration (RedM/FiveM)
+SERVER_API_KEY=$SERVER_API_KEY
+GAME_SERVER_IP=$GAME_SERVER_IP
+GAME_SERVER_PORT=$GAME_SERVER_PORT
+
+# Public environment variables (accessible in browser)
+NEXT_PUBLIC_GAME_SERVER_IP=$GAME_SERVER_IP
+NEXT_PUBLIC_GAME_SERVER_PORT=$GAME_SERVER_PORT
+
+# Email Configuration (for verification and password reset)
+SMTP_HOST=$SMTP_HOST
+SMTP_PORT=$SMTP_PORT
+SMTP_USER=$SMTP_USER
+SMTP_PASS=$SMTP_PASS
+SMTP_FROM=$SMTP_FROM
+EOF
+    
+    # Set proper ownership and permissions
+    chown www-data:www-data "$APP_DIR/.env.local"
+    chmod 600 "$APP_DIR/.env.local"
+    
+    print_status "Environment configuration file created successfully"
+    print_info "Configuration saved to: $APP_DIR/.env.local"
+    print_info "File permissions set to 600 (secure)"
 }
 
 # Function to configure Nginx
@@ -535,6 +730,62 @@ configure_firewall() {
     esac
 }
 
+# Function to validate DNS before SSL setup
+validate_dns() {
+    if [ "$SETUP_SSL" = true ]; then
+        print_step "Validating DNS configuration..."
+        
+        # Get server's public IP
+        SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || curl -s icanhazip.com 2>/dev/null)
+        
+        if [ -z "$SERVER_IP" ]; then
+            print_warning "Could not determine server's public IP address"
+            print_info "Please ensure your domain $DOMAIN points to this server"
+            if ! prompt_yes_no "Continue with SSL setup anyway?" "n"; then
+                print_info "Skipping SSL setup. You can set it up manually later."
+                SETUP_SSL=false
+                return
+            fi
+        else
+            print_info "Server IP: $SERVER_IP"
+            
+            # Check if domain resolves to this server
+            DOMAIN_IP=$(dig +short "$DOMAIN" 2>/dev/null | tail -n1)
+            WWW_DOMAIN_IP=$(dig +short "www.$DOMAIN" 2>/dev/null | tail -n1)
+            
+            if [ -z "$DOMAIN_IP" ]; then
+                print_warning "Domain $DOMAIN does not resolve to any IP address"
+                print_info "Please ensure your DNS records are configured:"
+                print_info "  A record: $DOMAIN -> $SERVER_IP"
+                print_info "  A record: www.$DOMAIN -> $SERVER_IP"
+                if ! prompt_yes_no "Continue with SSL setup anyway?" "n"; then
+                    print_info "Skipping SSL setup. You can set it up manually later."
+                    SETUP_SSL=false
+                    return
+                fi
+            elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+                print_warning "Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
+                print_info "Please update your DNS records:"
+                print_info "  A record: $DOMAIN -> $SERVER_IP"
+                print_info "  A record: www.$DOMAIN -> $SERVER_IP"
+                if ! prompt_yes_no "Continue with SSL setup anyway?" "n"; then
+                    print_info "Skipping SSL setup. You can set it up manually later."
+                    SETUP_SSL=false
+                    return
+                fi
+            else
+                print_status "DNS validation successful - $DOMAIN resolves to $SERVER_IP"
+                
+                # Check www subdomain
+                if [ -n "$WWW_DOMAIN_IP" ] && [ "$WWW_DOMAIN_IP" != "$SERVER_IP" ]; then
+                    print_warning "www.$DOMAIN resolves to $WWW_DOMAIN_IP instead of $SERVER_IP"
+                    print_info "Consider updating: A record: www.$DOMAIN -> $SERVER_IP"
+                fi
+            fi
+        fi
+    fi
+}
+
 # Function to setup SSL certificate
 setup_ssl_certificate() {
     if [ "$SETUP_SSL" = true ]; then
@@ -549,10 +800,13 @@ setup_ssl_certificate() {
         print_info "Requesting SSL certificate for $DOMAIN..."
         if certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos --email "$ADMIN_EMAIL"; then
             print_status "SSL certificate installed successfully"
+            print_info "Your website is now available at: https://$DOMAIN"
         else
             print_warning "SSL certificate installation failed."
+            print_info "This is usually due to DNS not pointing to this server yet."
             print_info "You can set it up manually later with:"
             print_info "sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN"
+            print_info "Your website is available at: http://$SERVER_IP"
         fi
     fi
 }
@@ -663,19 +917,22 @@ display_completion_info() {
     echo "   Restart nginx:   systemctl restart nginx"
     
     echo ""
-    print_warning "🔧 Next Steps:"
-    echo "1. Edit $APP_DIR/.env.local with your configuration:"
-    echo "   - Discord OAuth credentials"
-    echo "   - MongoDB connection string"
-    echo "   - SMTP email settings"
-    echo "   - Game server details"
+    print_status "✅ Configuration Complete:"
+    echo "   - Environment file configured: $APP_DIR/.env.local"
+    echo "   - All settings applied automatically"
+    echo "   - Application ready to use"
     echo ""
-    echo "2. Restart the application:"
-    echo "   sudo -u www-data pm2 restart $APP_NAME"
+    
+    print_info "🔧 Next Steps:"
+    echo "1. Configure your Discord application OAuth settings:"
+    echo "   - Go to: https://discord.com/developers/applications"
+    echo "   - Add redirect URI: $NEXTAUTH_URL/api/auth/callback/discord"
     echo ""
-    echo "3. Test your website in a browser"
+    echo "2. Test your website in a browser"
     echo ""
-    echo "4. Configure your Discord application OAuth settings"
+    echo "3. If you need to modify settings later:"
+    echo "   - Edit: $APP_DIR/.env.local"
+    echo "   - Restart: sudo -u www-data pm2 restart $APP_NAME"
     
     if [ "$SETUP_SSL" = false ]; then
         echo ""
@@ -685,6 +942,142 @@ display_completion_info() {
     
     echo ""
     print_status "Installation completed successfully! 🚀"
+}
+
+# Function to detect existing installation
+detect_existing_installation() {
+    EXISTING_APPS=()
+    
+    # Check for existing installations in /var/www
+    if [ -d "/var/www" ]; then
+        for dir in /var/www/*/; do
+            if [ -d "$dir" ] && [ -f "$dir/package.json" ] && [ -f "$dir/.env.local" ]; then
+                app_name=$(basename "$dir")
+                # Skip if it's just the .npm-global directory
+                if [ "$app_name" != ".npm-global" ] && [ "$app_name" != "html" ]; then
+                    EXISTING_APPS+=("$app_name")
+                fi
+            fi
+        done
+    fi
+    
+    # Check PM2 processes
+    if command -v pm2 >/dev/null 2>&1; then
+        PM2_APPS=$(sudo -u www-data pm2 list 2>/dev/null | grep -E "communitysite|redm|fivem" | awk '{print $2}' | tr -d '│' | xargs)
+        if [ -n "$PM2_APPS" ]; then
+            for app in $PM2_APPS; do
+                if [[ ! " ${EXISTING_APPS[@]} " =~ " ${app} " ]]; then
+                    EXISTING_APPS+=("$app")
+                fi
+            done
+        fi
+    fi
+    
+    if [ ${#EXISTING_APPS[@]} -gt 0 ]; then
+        return 0  # Found existing installations
+    else
+        return 1  # No existing installations
+    fi
+}
+
+# Function to uninstall existing installation
+uninstall_existing() {
+    local app_to_remove="$1"
+    
+    print_step "Removing existing installation: $app_to_remove"
+    
+    # Stop PM2 process
+    if command -v pm2 >/dev/null 2>&1; then
+        print_info "Stopping PM2 process..."
+        sudo -u www-data pm2 stop "$app_to_remove" 2>/dev/null || true
+        sudo -u www-data pm2 delete "$app_to_remove" 2>/dev/null || true
+        sudo -u www-data pm2 save 2>/dev/null || true
+    fi
+    
+    # Remove Nginx configuration
+    if [ -f "/etc/nginx/sites-available/$app_to_remove" ]; then
+        print_info "Removing Nginx configuration..."
+        rm -f "/etc/nginx/sites-available/$app_to_remove"
+        rm -f "/etc/nginx/sites-enabled/$app_to_remove"
+        systemctl reload nginx 2>/dev/null || true
+    fi
+    
+    # Remove SSL certificates (ask user first)
+    if [ -d "/etc/letsencrypt/live" ]; then
+        for cert_dir in /etc/letsencrypt/live/*/; do
+            if [ -d "$cert_dir" ]; then
+                domain=$(basename "$cert_dir")
+                if prompt_yes_no "Remove SSL certificate for $domain?" "n"; then
+                    print_info "Removing SSL certificate for $domain..."
+                    certbot delete --cert-name "$domain" --non-interactive 2>/dev/null || true
+                fi
+            fi
+        done
+    fi
+    
+    # Remove application directory
+    if [ -d "/var/www/$app_to_remove" ]; then
+        print_info "Removing application directory..."
+        rm -rf "/var/www/$app_to_remove"
+    fi
+    
+    # Remove log directory
+    if [ -d "/var/log/$app_to_remove" ]; then
+        print_info "Removing log directory..."
+        rm -rf "/var/log/$app_to_remove"
+    fi
+    
+    # Remove cron jobs
+    print_info "Removing cron jobs..."
+    crontab -l 2>/dev/null | grep -v "$app_to_remove" | crontab - 2>/dev/null || true
+    
+    print_status "Existing installation removed successfully"
+}
+
+# Function to handle existing installations
+handle_existing_installations() {
+    if detect_existing_installation; then
+        print_warning "🔍 Existing installation(s) detected!"
+        echo ""
+        print_info "Found the following installations:"
+        for app in "${EXISTING_APPS[@]}"; do
+            echo "  - $app"
+            if [ -d "/var/www/$app" ]; then
+                echo "    Location: /var/www/$app"
+            fi
+            if sudo -u www-data pm2 list 2>/dev/null | grep -q "$app"; then
+                echo "    Status: Running in PM2"
+            fi
+        done
+        
+        echo ""
+        print_info "What would you like to do?"
+        echo "1. Remove existing installation(s) and install fresh"
+        echo "2. Cancel installation"
+        echo ""
+        
+        while true; do
+            read -p "Enter your choice (1-2): " choice
+            case $choice in
+                1)
+                    print_info "Removing existing installations..."
+                    for app in "${EXISTING_APPS[@]}"; do
+                        uninstall_existing "$app"
+                    done
+                    print_status "All existing installations removed. Continuing with fresh installation..."
+                    echo ""
+                    break
+                    ;;
+                2)
+                    print_info "Installation cancelled by user."
+                    exit 0
+                    ;;
+                *)
+                    print_error "Invalid choice. Please enter 1 or 2."
+                    ;;
+            esac
+        done
+    fi
 }
 
 # Main installation function
@@ -708,6 +1101,9 @@ main() {
         exit 1
     fi
     
+    # Check for existing installations
+    handle_existing_installations
+    
     # Run installation steps
     detect_os
     collect_configuration
@@ -719,6 +1115,7 @@ main() {
     configure_nginx
     setup_pm2_config
     configure_firewall
+    validate_dns
     setup_ssl_certificate
     start_services
     setup_monitoring

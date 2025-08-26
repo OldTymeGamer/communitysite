@@ -39,15 +39,26 @@ sudo ./quick-install.sh
 ### **What All Methods Include:**
 - ✅ **Auto-download** latest version (Option 1 & 3)
 - ✅ **Dependency installation** - Node.js, Nginx, SSL tools
-- ✅ **Interactive configuration** - Guided setup prompts
+- ✅ **Interactive configuration** - Complete guided setup with confirmation
 - ✅ **SSL certificates** - Optional Let's Encrypt setup
 - ✅ **Production services** - Nginx, PM2, firewall
 - ✅ **Security hardening** - Best practices applied
 - ✅ **Monitoring setup** - Health checks and auto-restart
 - ✅ **Clean installation** - No leftover files
+- ✅ **Existing installation detection** - Automatic cleanup and reinstall
 
 **For development setup, see the [Development Setup](#-development-setup) section below.**
 **For detailed installation instructions, see the [Installation Guide](./INSTALLATION.md).**
+
+### **🗑️ Uninstall**
+
+To completely remove the community website:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/uninstall.sh | sudo bash
+```
+
+Or if you run the installer again, it will automatically detect and offer to remove existing installations.
 
 ## ✨ Features
 
@@ -220,22 +231,25 @@ The `install.sh` script will guide you through:
 
 **Example Installation Flow:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/quick-install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install-wrapper.sh | sudo bash
 
 # The installer will automatically:
 # 1. Download the latest version
-# 2. Prompt you for configuration:
+# 2. Interactive configuration prompts:
 #    - App name (default: communitysite)
 #    - Port (default: 3000)
 #    - SSL setup? (Y/n)
 #    - Domain name (e.g., yourdomain.com)
 #    - Admin email for SSL
+#    - MongoDB URI (local or Atlas)
 #    - Discord OAuth credentials
-#    - MongoDB connection string
-#    - SMTP email settings
-#    - Game server details
-# 3. Install and configure everything
-# 4. Clean up temporary files
+#    - Game server details (IP, port, API key)
+#    - SMTP email settings (host, port, credentials)
+# 3. Configuration summary with numbered options
+# 4. Ability to modify any setting by number
+# 5. Automatic .env.local file generation
+# 6. Complete system installation and setup
+# 7. Clean up temporary files
 ```
 
 ## 📁 Project Structure

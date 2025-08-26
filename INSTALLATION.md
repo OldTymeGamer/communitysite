@@ -39,6 +39,13 @@ sudo ./quick-install.sh
 
 All methods will guide you through the entire process with interactive prompts.
 
+**🔄 Reinstallation:** If you run the installer on a server with an existing installation, it will automatically detect it and offer to remove the old installation before installing fresh.
+
+**🗑️ Complete Removal:** To uninstall everything without reinstalling:
+```bash
+curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/uninstall.sh | sudo bash
+```
+
 ## 📋 What the Installer Does
 
 ### 1. System Detection
