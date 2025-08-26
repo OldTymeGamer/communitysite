@@ -13,6 +13,8 @@ declare module "next-auth" {
       discordUsername?: string
       discordAvatar?: string
       isDiscordConnected?: boolean
+      isEmailVerified?: boolean
+      isAdmin?: boolean
       accessToken?: string
     }
   }
@@ -28,6 +30,8 @@ declare module "next-auth" {
     discordUsername?: string
     discordAvatar?: string
     isDiscordConnected?: boolean
+    isEmailVerified?: boolean
+    isAdmin?: boolean
     accessToken?: string
   }
 }
@@ -40,6 +44,8 @@ declare module "next-auth/jwt" {
     discordUsername?: string
     discordAvatar?: string
     isDiscordConnected?: boolean
+    isEmailVerified?: boolean
+    isAdmin?: boolean
     accessToken?: string
   }
 }
