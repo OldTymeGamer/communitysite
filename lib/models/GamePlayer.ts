@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-export interface IRedMPlayer extends mongoose.Document {
+export interface IGamePlayer extends mongoose.Document {
   playerId: string
   username: string
   money: number
@@ -8,7 +8,7 @@ export interface IRedMPlayer extends mongoose.Document {
   lastSynced: Date
 }
 
-const RedMPlayerSchema = new mongoose.Schema<IRedMPlayer>({
+const GamePlayerSchema = new mongoose.Schema<IGamePlayer>({
   playerId: { type: String, required: true, unique: true },
   username: { type: String, required: true },
   money: { type: Number, required: true },
@@ -16,4 +16,4 @@ const RedMPlayerSchema = new mongoose.Schema<IRedMPlayer>({
   lastSynced: { type: Date, default: Date.now }
 })
 
-export default mongoose.models.RedMPlayer || mongoose.model<IRedMPlayer>('RedMPlayer', RedMPlayerSchema)
+export default mongoose.models.GamePlayer || mongoose.model<IGamePlayer>('GamePlayer', GamePlayerSchema)

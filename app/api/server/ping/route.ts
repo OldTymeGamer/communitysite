@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const ip = searchParams.get('ip') || process.env.REDM_SERVER_IP || "173.208.177.138"
-  const port = searchParams.get('port') || process.env.REDM_SERVER_PORT || "30126"
+  const ip = searchParams.get('ip') || process.env.GAME_SERVER_IP || "173.208.177.138"
+  const port = searchParams.get('port') || process.env.GAME_SERVER_PORT || "30126"
   
   try {
     const start = Date.now()
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const response = await fetch(`https://servers-frontend.fivem.net/api/servers/stream/${ip}:${port}`, {
       cache: "no-store",
       headers: {
-        "User-Agent": "RedM-Community-Hub/1.0",
+        "User-Agent": "Community-Hub/1.0",
       },
       signal: AbortSignal.timeout(5000) // 5 second timeout
     })

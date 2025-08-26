@@ -1,6 +1,6 @@
 # 🔧 Environment Configuration Guide
 
-This guide covers detailed environment variable configuration for the Lost Trail RP community website.
+This guide covers detailed environment variable configuration for the RedM/FiveM community website.
 
 ## 📋 Environment Variables Overview
 
@@ -57,15 +57,15 @@ openssl rand -base64 32
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-## 🎮 RedM Server Integration
+## 🎮 Game Server Integration (RedM/FiveM)
 
 ```env
-# RedM API Key (if your server supports it)
-REDM_API_KEY=your_redm_api_key_here
+# Server API Key (if your server supports it)
+SERVER_API_KEY=your_server_api_key_here
 
-# RedM Server Connection Details
-REDM_SERVER_IP=your_server_ip
-REDM_SERVER_PORT=30120
+# Game Server Connection Details
+GAME_SERVER_IP=your_server_ip
+GAME_SERVER_PORT=30120
 ```
 
 ## 🗄️ Database Configuration
@@ -75,9 +75,9 @@ REDM_SERVER_PORT=30120
 MONGODB_URI=mongodb://username:password@host:port/database
 
 # Examples:
-# Local: mongodb://localhost:27017/losttrailrp
-# Atlas: mongodb+srv://user:pass@cluster.mongodb.net/losttrailrp
-# Docker: mongodb://mongo:27017/losttrailrp
+# Local: mongodb://localhost:27017/community
+# Atlas: mongodb+srv://user:pass@cluster.mongodb.net/community
+# Docker: mongodb://mongo:27017/community
 ```
 
 ### MongoDB Atlas Setup
@@ -124,21 +124,21 @@ SMTP_PORT=587
 ```env
 NEXTAUTH_URL=http://localhost:3000
 DISCORD_REDIRECT_URI=http://localhost:3000/api/auth/callback/discord
-MONGODB_URI=mongodb://localhost:27017/losttrailrp_dev
+MONGODB_URI=mongodb://localhost:27017/community_dev
 ```
 
 ### Production (.env.local)
 ```env
-NEXTAUTH_URL=https://losttrailrp.com
-DISCORD_REDIRECT_URI=https://losttrailrp.com/api/auth/callback/discord
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/losttrailrp
+NEXTAUTH_URL=https://your-community.com
+DISCORD_REDIRECT_URI=https://your-community.com/api/auth/callback/discord
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/community
 ```
 
 ### Staging (.env.local)
 ```env
-NEXTAUTH_URL=https://staging.losttrailrp.com
-DISCORD_REDIRECT_URI=https://staging.losttrailrp.com/api/auth/callback/discord
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/losttrailrp_staging
+NEXTAUTH_URL=https://staging.your-community.com
+DISCORD_REDIRECT_URI=https://staging.your-community.com/api/auth/callback/discord
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/community_staging
 ```
 
 ## 🔒 Security Best Practices
@@ -169,7 +169,7 @@ chown www-data:www-data .env.local
 ### Test Environment Variables
 ```env
 # Use test database
-MONGODB_URI=mongodb://localhost:27017/losttrailrp_test
+MONGODB_URI=mongodb://localhost:27017/community_test
 
 # Disable external services in tests
 DISCORD_BOT_TOKEN=test_token

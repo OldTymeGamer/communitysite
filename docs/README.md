@@ -1,6 +1,6 @@
-# 📚 Lost Trail RP Documentation
+# 📚 RedM/FiveM Community Website Documentation
 
-Welcome to the Lost Trail RP documentation hub. Here you'll find comprehensive guides for setup, deployment, and maintenance of the community website.
+Welcome to the RedM/FiveM Community Website documentation hub. Here you'll find comprehensive guides for setup, deployment, and maintenance of your gaming community website.
 
 ## 📖 Documentation Index
 
@@ -19,7 +19,7 @@ Welcome to the Lost Trail RP documentation hub. Here you'll find comprehensive g
 - [Discord Integration](./DISCORD.md) - Discord bot and OAuth setup
 - [Database Setup](./DATABASE.md) - MongoDB configuration and management
 - [Email Configuration](./EMAIL.md) - SMTP setup for notifications
-- [RedM Integration](./REDM.md) - RedM server integration guide
+- [Game Server Integration](./GAMESERVER.md) - RedM/FiveM server integration guide
 
 ### 🎨 Customization
 - [Theming Guide](./THEMING.md) - Customizing the Wild West theme

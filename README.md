@@ -1,11 +1,11 @@
-# 🤠 Lost Trail RP - Red Dead Redemption 2 Community Website
+# 🎮 RedM/FiveM Community Website
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.1.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-5.9.2-green?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
 [![Discord](https://img.shields.io/badge/Discord-Integration-7289da?style=for-the-badge&logo=discord)](https://discord.com/)
 
-A modern, feature-rich community website for Red Dead Redemption 2 roleplay servers. Built with Next.js 15, featuring Discord authentication, real-time server monitoring, and a beautiful Wild West-themed interface.
+A modern, feature-rich community website for RedM and FiveM servers. Built with Next.js 15, featuring Discord authentication, real-time server monitoring, and a customizable interface perfect for any gaming community.
 
 ## ✨ Features
 
@@ -13,12 +13,12 @@ A modern, feature-rich community website for Red Dead Redemption 2 roleplay serv
 - **Real-time Server Monitoring** - Live player counts and server status
 - **Discord Integration** - OAuth authentication and member sync
 - **Community Hub** - News feed, events calendar, and community discussions
-- **Server Browser** - Browse and connect to RedM servers
+- **Server Browser** - Browse and connect to RedM/FiveM servers
 - **User Profiles** - Customizable player profiles with achievements
 - **Admin Dashboard** - Comprehensive server and user management
 
 ### 🎨 Design & UX
-- **Wild West Theme** - Authentic Western aesthetic with custom animations
+- **Customizable Theme** - Beautiful interface with customizable styling (Wild West theme included)
 - **Responsive Design** - Mobile-first approach with Tailwind CSS
 - **Smooth Animations** - Framer Motion powered transitions and effects
 - **Dark Mode** - Beautiful dark theme optimized for gaming communities
@@ -44,8 +44,8 @@ A modern, feature-rich community website for Red Dead Redemption 2 roleplay serv
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repository-url>
-   cd LostTrail
+   git clone https://github.com/OldTymeGamer/communitysite
+   cd communitysite
    ```
 
 2. **Install dependencies**
@@ -74,13 +74,13 @@ A modern, feature-rich community website for Red Dead Redemption 2 roleplay serv
    NEXTAUTH_URL=http://localhost:3000
    DISCORD_REDIRECT_URI=http://localhost:3000/api/auth/callback/discord
    
-   # RedM Server Configuration
-   REDM_API_KEY=your_redm_api_key_here
-   REDM_SERVER_IP=your_server_ip
-   REDM_SERVER_PORT=30120
+   # Game Server Configuration
+   SERVER_API_KEY=your_server_api_key_here
+   GAME_SERVER_IP=your_server_ip
+   GAME_SERVER_PORT=30120
    
    # Database
-   MONGODB_URI=mongodb://localhost:27017/losttrailrp
+   MONGODB_URI=mongodb://localhost:27017/community
    
    # Email Configuration
    SMTP_HOST=smtp.gmail.com
@@ -102,7 +102,7 @@ A modern, feature-rich community website for Red Dead Redemption 2 roleplay serv
 ## 📁 Project Structure
 
 ```
-LostTrail/
+communitysite/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API routes
 │   ├── admin/             # Admin dashboard
@@ -132,7 +132,7 @@ LostTrail/
 - Admin role verification
 
 ### Server Integration
-- Real-time RedM server monitoring
+- Real-time RedM/FiveM server monitoring
 - Player count tracking
 - Server status indicators
 - API endpoints for server data
@@ -228,7 +228,7 @@ The deployment script automatically handles:
 ## 🤝 Community
 
 - **Discord Server**: [Join our community](https://discord.gg/your-invite)
-- **Website**: [losttrailrp.com](https://losttrailrp.com)
+- **Website**: [your-community.com](https://your-community.com)
 - **Support**: Create an issue or contact administrators
 
 ## 📄 License
@@ -247,5 +247,5 @@ This project is private and proprietary. All rights reserved.
 ---
 
 <div align="center">
-  <strong>Built with ❤️ for the Red Dead Redemption 2 community</strong>
+  <strong>Built with ❤️ for the RedM/FiveM gaming community</strong>
 </div>

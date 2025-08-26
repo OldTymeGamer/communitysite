@@ -26,7 +26,7 @@ export function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [shuffledImages, setShuffledImages] = useState<string[]>(heroImages)
   const [discordCount, setDiscordCount] = useState<number>(0)
-  const [redmPlayerCount, setRedmPlayerCount] = useState<number>(0)
+  const [gamePlayerCount, setGamePlayerCount] = useState<number>(0)
   const { scrollY } = useScroll()
   const y = useTransform(scrollY, [0, 500], [0, 150])
   const opacity = useTransform(scrollY, [0, 300], [1, 0])
@@ -67,15 +67,15 @@ export function HeroSection() {
   }, [])
 
   useEffect(() => {
-    async function fetchRedmPlayers() {
+    async function fetchGamePlayers() {
       try {
-        const res = await fetch("/api/redm/players", { cache: "no-store" })
+        const res = await fetch("/api/server/players", { cache: "no-store" })
         const data = await res.json()
-        if (typeof data?.count === "number") setRedmPlayerCount(data.count)
+        if (typeof data?.count === "number") setGamePlayerCount(data.count)
       } catch {}
     }
-    fetchRedmPlayers()
-    const t = setInterval(fetchRedmPlayers, 30_000) // Update every 30 seconds
+    fetchGamePlayers()
+    const t = setInterval(fetchGamePlayers, 30_000) // Update every 30 seconds
     return () => clearInterval(t)
   }, [])
 
@@ -208,7 +208,7 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 1.6 }}
         >
           <StatCard icon={Users} label="Discord Members" value={discordCount} delay={0} />
-          <StatCard icon={Server} label="Online Players" value={redmPlayerCount} delay={0.2} />
+          <StatCard icon={Server} label="Online Players" value={gamePlayerCount} delay={0.2} />
         </motion.div>
       </motion.div>
 
