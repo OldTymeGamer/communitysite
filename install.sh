@@ -279,10 +279,16 @@ collect_all_config() {
     
     # Game Server Configuration
     echo ""
-    print_step "Game Server Configuration (RedM/FiveM)"
-    prompt_input "Game Server IP" "" "GAME_SERVER_IP"
-    prompt_input "Game Server Port" "30120" "GAME_SERVER_PORT"
-    prompt_input "Server API Key (if required)" "" "SERVER_API_KEY"
+    print_step "Game Server Configuration (RedM/FiveM) - Optional"
+    print_info "Leave blank if you don't have a game server yet"
+    prompt_input "Game Server IP (optional)" "" "GAME_SERVER_IP"
+    if [ -n "$GAME_SERVER_IP" ]; then
+        prompt_input "Game Server Port" "30120" "GAME_SERVER_PORT"
+        prompt_input "Server API Key (optional)" "" "SERVER_API_KEY"
+    else
+        GAME_SERVER_PORT=""
+        SERVER_API_KEY=""
+    fi
     
     # Email Configuration
     echo ""
@@ -294,7 +300,7 @@ collect_all_config() {
     prompt_input "SMTP Port" "587" "SMTP_PORT"
     prompt_input "SMTP Username/Email" "" "SMTP_USER"
     prompt_input "SMTP Password (App Password for Gmail)" "" "SMTP_PASS"
-    prompt_input "From Email Address" "$SMTP_USER" "SMTP_FROM"
+    prompt_input "From Email Address" "${SMTP_USER:-your-email@example.com}" "SMTP_FROM"
 }
 
 # Function to display configuration summary
@@ -336,9 +342,13 @@ display_config_summary() {
     
     echo ""
     print_info "🎯 Game Server:"
-    echo "  15. Server IP: ${GAME_SERVER_IP:-'Not set'}"
-    echo "  16. Server Port: ${GAME_SERVER_PORT:-'Not set'}"
-    echo "  17. API Key: ${SERVER_API_KEY:0:10}... (hidden)"
+    echo "  15. Server IP: ${GAME_SERVER_IP:-'Not configured (optional)'}"
+    echo "  16. Server Port: ${GAME_SERVER_PORT:-'Not configured (optional)'}"
+    if [ -n "$SERVER_API_KEY" ]; then
+        echo "  17. API Key: ${SERVER_API_KEY:0:10}... (hidden)"
+    else
+        echo "  17. API Key: Not configured (optional)"
+    fi
     
     echo ""
     print_info "📧 Email (SMTP):"
@@ -429,34 +439,46 @@ setup_application_environment() {
         chown www-data:www-data /var/www
     fi
     
+    # Fix all npm-related permission issues first
+    print_info "Fixing npm permissions..."
+    
+    # Remove any existing npm config files that might have wrong permissions
+    rm -f /var/www/.npmrc 2>/dev/null || true
+    
+    # Fix root-owned npm cache if it exists
+    if [ -d "/root/.npm" ]; then
+        print_info "Moving root npm cache to www-data..."
+        if [ -d "/var/www/.npm" ]; then
+            rm -rf /var/www/.npm
+        fi
+        mv /root/.npm /var/www/.npm 2>/dev/null || cp -r /root/.npm /var/www/.npm 2>/dev/null || mkdir -p /var/www/.npm
+        chown -R www-data:www-data /var/www/.npm
+    else
+        mkdir -p /var/www/.npm
+        chown -R www-data:www-data /var/www/.npm
+    fi
+    
     # Set up npm environment for www-data
     mkdir -p /var/www/.npm-global
     chown -R www-data:www-data /var/www/.npm-global
     
-    # Configure npm for www-data user
-    sudo -u www-data npm config set prefix '/var/www/.npm-global'
+    # Ensure www-data owns its home directory completely
+    chown -R www-data:www-data /var/www
     
     # Create .bashrc for www-data with PATH
     echo 'export PATH="/var/www/.npm-global/bin:$PATH"' > /var/www/.bashrc
     chown www-data:www-data /var/www/.bashrc
     
-    # Fix any existing npm permission issues
-    if [ -d "/var/www/.npm" ]; then
-        chown -R www-data:www-data /var/www/.npm
+    # Configure npm for www-data user (with proper environment)
+    print_info "Configuring npm for www-data user..."
+    if ! sudo -u www-data bash -c "
+        export HOME=/var/www
+        npm config set prefix '/var/www/.npm-global' 2>/dev/null
+        npm config set cache '/var/www/.npm' 2>/dev/null
+    "; then
+        print_warning "npm configuration had some issues, but continuing..."
+        print_info "This may be resolved during the application deployment step"
     fi
-    
-    # Fix npm cache permissions (common issue)
-    if [ -d "/root/.npm" ]; then
-        print_info "Fixing npm cache permissions..."
-        chown -R www-data:www-data /root/.npm 2>/dev/null || true
-    fi
-    
-    # Create npm cache directory for www-data
-    mkdir -p /var/www/.npm
-    chown -R www-data:www-data /var/www/.npm
-    
-    # Set npm cache directory for www-data
-    sudo -u www-data npm config set cache '/var/www/.npm'
     
     print_status "Application environment configured"
 }
@@ -465,8 +487,21 @@ setup_application_environment() {
 install_pm2() {
     print_step "Installing PM2 process manager..."
     
+    # Ensure npm cache is properly owned before installing PM2
+    chown -R www-data:www-data /var/www/.npm 2>/dev/null || true
+    chown -R www-data:www-data /var/www/.npm-global 2>/dev/null || true
+    
     # Install PM2 globally for www-data user
-    sudo -u www-data bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && npm install -g pm2'
+    print_info "Installing PM2 globally..."
+    if ! sudo -u www-data bash -c 'export HOME=/var/www && export PATH="/var/www/.npm-global/bin:$PATH" && npm install -g pm2'; then
+        print_warning "PM2 installation had issues, trying alternative method..."
+        # Try installing as root and then fixing permissions
+        npm install -g pm2
+        # Create symlink for www-data
+        mkdir -p /var/www/.npm-global/bin
+        ln -sf /usr/local/bin/pm2 /var/www/.npm-global/bin/pm2 2>/dev/null || true
+        chown -R www-data:www-data /var/www/.npm-global
+    fi
     
     print_status "PM2 installed successfully"
 }
@@ -487,11 +522,21 @@ deploy_application() {
     # Install dependencies
     print_info "Installing npm dependencies..."
     cd "$APP_DIR"
-    sudo -u www-data bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && npm install'
+    
+    # Ensure proper ownership before npm install
+    chown -R www-data:www-data "$APP_DIR"
+    chown -R www-data:www-data /var/www/.npm 2>/dev/null || true
+    
+    if ! sudo -u www-data bash -c 'export HOME=/var/www && export PATH="/var/www/.npm-global/bin:$PATH" && npm install'; then
+        print_warning "npm install had permission issues, trying to fix..."
+        # Fix permissions and try again
+        chown -R www-data:www-data /var/www
+        sudo -u www-data bash -c 'export HOME=/var/www && export PATH="/var/www/.npm-global/bin:$PATH" && npm install --cache /var/www/.npm'
+    fi
     
     # Build application
     print_info "Building application..."
-    sudo -u www-data bash -c 'export PATH="/var/www/.npm-global/bin:$PATH" && npm run build'
+    sudo -u www-data bash -c 'export HOME=/var/www && export PATH="/var/www/.npm-global/bin:$PATH" && npm run build'
     
     print_status "Application deployed successfully"
 }
