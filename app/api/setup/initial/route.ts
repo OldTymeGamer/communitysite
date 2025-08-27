@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
 import User from '@/lib/models/User'
 import { WebsiteSettings } from '@/lib/models/WebsiteSettings'
-import bcrypt from 'bcryptjs'
+import { generateToken } from '@/lib/auth'
+import { cookies } from 'next/headers'
 
 export async function GET() {
   try {
     await connectDB()
     
-    // Check if any users exist
-    const userCount = await User.countDocuments()
+    // Check if an owner user exists
+    const ownerCount = await User.countDocuments({ isOwner: true })
     
     return NextResponse.json({ 
-      needsSetup: userCount === 0 
+      needsSetup: ownerCount === 0 
     })
   } catch (error) {
     console.error('Setup check failed:', error)
@@ -25,8 +26,8 @@ export async function POST(request: NextRequest) {
     await connectDB()
     
     // Check if setup is needed
-    const userCount = await User.countDocuments()
-    if (userCount > 0) {
+    const ownerCount = await User.countDocuments({ isOwner: true })
+    if (ownerCount > 0) {
       return NextResponse.json({ error: 'Setup already completed' }, { status: 400 })
     }
 
@@ -41,18 +42,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Create owner user
+    // Create owner user (password will be hashed by the model's pre-save hook)
     const user = new User({
       username,
-      email,
-      password: hashedPassword,
+      email: email.toLowerCase(),
+      password, // Don't hash here - let the model handle it
       isOwner: true,
       isAdmin: true,
-      isVerified: true, // Owner is automatically verified
-      createdAt: new Date()
+      isEmailVerified: true, // Owner is automatically verified
+      isDiscordConnected: false
     })
 
     await user.save()
@@ -130,8 +128,27 @@ export async function POST(request: NextRequest) {
 
     await settings.save()
 
+    // Generate JWT token and set cookie to auto-login the user
+    const token = generateToken({
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      isOwner: user.isOwner
+    })
+
+    // Set auth cookie
+    const cookieStore = cookies()
+    cookieStore.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    })
+
     return NextResponse.json({ 
       message: 'Initial setup completed successfully',
+      token,
       user: {
         id: user._id,
         username: user.username,

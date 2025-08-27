@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, CheckCircle, Settings, User, Globe } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/components/session-provider"
 
 export default function SetupPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [loading, setLoading] = useState(true)
   const [needsSetup, setNeedsSetup] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -75,10 +77,18 @@ export default function SetupPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
         toast.success("Setup completed successfully!")
+        
+        // Auto-login the user
+        if (data.token && data.user) {
+          login(data.token, data.user)
+        }
+        
+        // Redirect to admin panel
         setTimeout(() => {
-          router.push("/login")
-        }, 2000)
+          router.push("/admin")
+        }, 1500)
       } else {
         const error = await response.json()
         toast.error(error.error || "Setup failed")

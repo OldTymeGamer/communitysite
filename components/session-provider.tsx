@@ -27,40 +27,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check for existing token on mount
-    const token = localStorage.getItem('auth-token')
-    if (token) {
-      // Verify token with server
-      fetch('/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setUser(data.user)
-        } else {
-          localStorage.removeItem('auth-token')
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem('auth-token')
-      })
-      .finally(() => {
+    // Use a small delay to ensure we're on the client side
+    const checkAuth = () => {
+      if (typeof window === 'undefined') {
         setLoading(false)
-      })
-    } else {
-      setLoading(false)
+        return
+      }
+
+      const token = localStorage.getItem('auth-token')
+      if (token) {
+        // Verify token with server
+        fetch('/api/auth/verify', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setUser(data.user)
+          } else {
+            localStorage.removeItem('auth-token')
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('auth-token')
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+      } else {
+        setLoading(false)
+      }
     }
+
+    // Small delay to ensure hydration is complete
+    const timer = setTimeout(checkAuth, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const login = (token: string, userData: User) => {
-    localStorage.setItem('auth-token', token)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', token)
+    }
     setUser(userData)
   }
 
   const logout = () => {
-    localStorage.removeItem('auth-token')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-token')
+    }
     setUser(null)
   }
 

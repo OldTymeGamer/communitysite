@@ -12,12 +12,14 @@ const rye = Rye({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-western",
+  preload: true,
 })
 
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
+  preload: true,
 })
 
 export const metadata: Metadata = {
