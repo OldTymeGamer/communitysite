@@ -12,7 +12,7 @@ A modern, feature-rich community website for RedM and FiveM servers. Built with 
 Run this single command on your Linux server:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/communitysite/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh | bash
 ```
 
 
