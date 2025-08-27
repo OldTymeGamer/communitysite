@@ -660,21 +660,12 @@ configure_nginx() {
     NGINX_CONF="/etc/nginx/sites-available/$APP_NAME"
     
     if [ "$SETUP_SSL" = true ]; then
-        # Configuration with SSL placeholder
+        # Start with HTTP-only configuration for SSL domain
+        # Certbot will modify this to add SSL configuration
         cat > "$NGINX_CONF" << EOF
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
-    
-    # Redirect HTTP to HTTPS (will be configured by certbot)
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name $DOMAIN www.$DOMAIN;
-    
-    # SSL configuration will be added by certbot
     
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
