@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Menu, X, Home, Server, Users, BookOpen, HelpCircle, Settings, LogIn, LogOut, User } from "lucide-react"
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useAuth } from "@/components/session-provider"
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -18,7 +18,7 @@ const navItems = [
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { data: session, status } = useSession()
+  const { user, logout } = useAuth()
 
   return (
     <motion.nav
@@ -77,7 +77,7 @@ export function Navigation() {
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            {session ? (
+            {user ? (
               <>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button

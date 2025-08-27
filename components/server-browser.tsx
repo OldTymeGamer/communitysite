@@ -15,7 +15,7 @@ interface Server {
   description: string
   ip: string
   port: number
-  gameType: "redm" | "fivem"
+  gameType: "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
   isPublic: boolean
   isOnline: boolean
   playerCount: number

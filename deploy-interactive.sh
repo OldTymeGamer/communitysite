@@ -269,23 +269,13 @@ deploy_application() {
 configure_nginx() {
     print_header "Configuring Nginx"
     
-    # Create Nginx configuration
+    # Create HTTP-only Nginx configuration (SSL will be added later)
     cat > "$NGINX_CONF" << EOF
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
     
-    # Redirect HTTP to HTTPS
-    return 301 https://\$server_name\$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name $DOMAIN www.$DOMAIN;
-    
-    # SSL configuration will be added by certbot
-    
-    # Security headers
+    # Security headers (HTTP version)
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -298,6 +288,11 @@ server {
     gzip_min_length 1024;
     gzip_proxied expired no-cache no-store private must-revalidate auth;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss;
+    
+    # Let's Encrypt challenge location
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
     
     location / {
         proxy_pass http://localhost:$APP_PORT;
@@ -455,16 +450,37 @@ setup_ssl() {
     if prompt_yes_no "Would you like to set up SSL with Let's Encrypt?" "y"; then
         print_info "Setting up SSL certificate for $DOMAIN..."
         
-        # Start nginx first
+        # Make sure nginx is running
         systemctl start nginx
         
-        if certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos --email "$ADMIN_EMAIL"; then
+        # Wait a moment for nginx to fully start
+        sleep 2
+        
+        # Create directory for Let's Encrypt challenges
+        mkdir -p /var/www/html/.well-known/acme-challenge
+        chown -R www-data:www-data /var/www/html
+        
+        if certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos --email "$ADMIN_EMAIL" --redirect; then
             print_status "SSL certificate installed successfully"
+            
+            # Update environment file to use HTTPS
+            if [ -f "$APP_DIR/.env.local" ]; then
+                print_info "Updating NEXTAUTH_URL to use HTTPS..."
+                sed -i "s|NEXTAUTH_URL=http://|NEXTAUTH_URL=https://|g" "$APP_DIR/.env.local"
+                print_status "Environment updated to use HTTPS"
+                
+                # Restart the application to pick up the new environment
+                print_info "Restarting application to use HTTPS..."
+                systemctl restart "$APP_NAME"
+            fi
         else
-            print_warning "SSL certificate installation failed. You can set it up manually later."
+            print_warning "SSL certificate installation failed."
+            print_info "Your site is still accessible via HTTP at: http://$DOMAIN"
+            print_info "You can set up SSL manually later using the setup-ssl.sh script"
         fi
     else
-        print_info "Skipping SSL setup. You can configure it manually later."
+        print_info "Skipping SSL setup. Your site will be accessible via HTTP at: http://$DOMAIN"
+        print_info "You can set up SSL later using the setup-ssl.sh script"
     fi
 }
 

@@ -38,6 +38,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check if this is the first user (should become owner)
+    const userCount = await User.countDocuments()
+    const isFirstUser = userCount === 0
+
     // Generate email verification token
     const verificationToken = crypto.randomBytes(32).toString('hex')
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
@@ -48,24 +52,30 @@ export async function POST(request: NextRequest) {
       email,
       password,
       emailVerificationToken: verificationToken,
-      emailVerificationExpires: verificationExpires
+      emailVerificationExpires: verificationExpires,
+      isOwner: isFirstUser,
+      isAdmin: isFirstUser,
+      isEmailVerified: isFirstUser // First user is auto-verified
     })
 
     await user.save()
 
-    // Send verification email
-    const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
-    const emailContent = generateVerificationEmail(username, verificationUrl)
-    
-    const emailResult = await sendEmail({
-      to: email,
-      subject: emailContent.subject,
-      html: emailContent.html
-    })
+    // Send verification email (skip for first user as they're auto-verified)
+    let emailResult = { success: true }
+    if (!isFirstUser) {
+      const verificationUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+      const emailContent = generateVerificationEmail(username, verificationUrl)
+      
+      emailResult = await sendEmail({
+        to: email,
+        subject: emailContent.subject,
+        html: emailContent.html
+      })
 
-    if (!emailResult.success) {
-      console.error('Failed to send verification email:', emailResult.error)
-      // Don't fail registration if email fails, just log it
+      if (!emailResult.success) {
+        console.error('Failed to send verification email:', emailResult.error)
+        // Don't fail registration if email fails, just log it
+      }
     }
 
     // Return user without password
@@ -78,11 +88,16 @@ export async function POST(request: NextRequest) {
       createdAt: user.createdAt
     }
 
+    const message = isFirstUser 
+      ? 'Registration successful! You are now the site owner and can access the admin panel.'
+      : 'Registration successful! Please check your email to verify your account.'
+
     return NextResponse.json(
       { 
-        message: 'Registration successful! Please check your email to verify your account.',
+        message,
         user: userResponse,
-        emailSent: emailResult.success
+        emailSent: emailResult.success,
+        isOwner: isFirstUser
       },
       { status: 201 }
     )

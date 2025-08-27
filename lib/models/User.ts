@@ -12,6 +12,7 @@ export interface IUser extends mongoose.Document {
   isDiscordConnected: boolean
   isEmailVerified: boolean
   isAdmin: boolean
+  isOwner: boolean
   emailVerificationToken?: string
   emailVerificationExpires?: Date
   passwordResetToken?: string
@@ -75,6 +76,10 @@ const UserSchema = new mongoose.Schema<IUser>({
     default: false
   },
   isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  isOwner: {
     type: Boolean,
     default: false
   },

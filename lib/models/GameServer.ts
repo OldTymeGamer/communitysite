@@ -24,8 +24,8 @@ const GameServerSchema = new mongoose.Schema({
   },
   gameType: {
     type: String,
-    enum: ["redm", "fivem"],
-    default: "redm"
+    enum: ["redm", "fivem", "minecraft", "rust", "gmod", "csgo", "other"],
+    default: "other"
   },
   isPublic: {
     type: Boolean,
