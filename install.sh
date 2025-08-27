@@ -5,6 +5,13 @@
 
 set -e
 
+# Check if running interactively
+if [ ! -t 0 ]; then
+    echo "⚠️  Warning: Not running in interactive mode"
+    echo "ℹ️  If prompts don't work, try: bash <(curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh)"
+    echo ""
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -60,12 +67,18 @@ prompt_input() {
     local var_name="$3"
     
     if [ -n "$default" ]; then
-        echo -e "${CYAN}$prompt${NC} ${YELLOW}(default: $default)${NC}: "
+        printf "${CYAN}%s${NC} ${YELLOW}(default: %s)${NC}: " "$prompt" "$default"
     else
-        echo -e "${CYAN}$prompt${NC}: "
+        printf "${CYAN}%s${NC}: " "$prompt"
     fi
     
-    read -r input
+    # Try to read from /dev/tty if available, otherwise use stdin
+    if [ -r /dev/tty ]; then
+        read -r input < /dev/tty
+    else
+        read -r input
+    fi
+    
     if [ -z "$input" ] && [ -n "$default" ]; then
         input="$default"
     fi
@@ -80,12 +93,17 @@ prompt_yes_no() {
     
     while true; do
         if [ "$default" = "y" ]; then
-            echo -e "${CYAN}$prompt${NC} ${YELLOW}(Y/n)${NC}: "
+            printf "${CYAN}%s${NC} ${YELLOW}(Y/n)${NC}: " "$prompt"
         else
-            echo -e "${CYAN}$prompt${NC} ${YELLOW}(y/N)${NC}: "
+            printf "${CYAN}%s${NC} ${YELLOW}(y/N)${NC}: " "$prompt"
         fi
         
-        read -r yn
+        # Try to read from /dev/tty if available, otherwise use stdin
+        if [ -r /dev/tty ]; then
+            read -r yn < /dev/tty
+        else
+            read -r yn
+        fi
         
         if [ -z "$yn" ]; then
             yn="$default"

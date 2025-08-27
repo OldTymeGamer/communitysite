@@ -30,6 +30,12 @@ A comprehensive, customizable community website platform supporting multiple gam
 curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh | sudo bash
 ```
 
+**If you experience input issues, use this alternative:**
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh)
+```
+
 That's it! The script will:
 - ✅ Install Node.js, Nginx, and all dependencies
 - ✅ Guide you through basic configuration (MongoDB, SSL)
