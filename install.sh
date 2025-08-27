@@ -337,14 +337,8 @@ collect_all_config() {
         echo "Running in HTTP mode on port: $APP_PORT"
     fi
     
-    # Database Configuration
-    echo ""
-    print_step "Database Configuration"
-    print_info "MongoDB connection string (local or cloud like MongoDB Atlas)"
-    print_info "Examples:"
-    print_info "  Local: mongodb://localhost:27017/community"
-    print_info "  Atlas: mongodb+srv://username:password@cluster.mongodb.net/community"
-    prompt_input "MongoDB URI" "mongodb://localhost:27017/community" "MONGODB_URI"
+    # Database Configuration with validation
+    collect_and_validate_database_config
     
     # All other configurations (Discord, Email, Game Servers) are handled through the admin panel
     echo ""
@@ -417,7 +411,7 @@ modify_configuration() {
                 ;;
             5) prompt_input "Domain name" "$DOMAIN" "DOMAIN" ;;
             6) prompt_input "Admin email" "$ADMIN_EMAIL" "ADMIN_EMAIL" ;;
-            7) prompt_input "MongoDB URI" "$MONGODB_URI" "MONGODB_URI" ;;
+            7) collect_and_validate_database_config ;;
             done|DONE) break ;;
             *) print_error "Invalid choice. Enter 1-7 or 'done'" ;;
         esac
@@ -584,6 +578,26 @@ deploy_application() {
     
     chown -R www-data:www-data "$APP_DIR"
     
+    # Setup environment configuration before building
+    print_info "Setting up environment configuration..."
+    cat > "$APP_DIR/.env.local" << EOF
+# Database Configuration
+MONGODB_URI=$MONGODB_URI
+
+# JWT Secret for authentication
+JWT_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
+
+# Site URL for email links
+SITE_URL=$(if [ "$SETUP_SSL" = true ]; then echo "https://$DOMAIN"; else echo "http://localhost:$APP_PORT"; fi)
+
+# All other settings (Discord, Email, Game Servers) are configured through the admin panel
+EOF
+    
+    # Set proper ownership and permissions for .env.local
+    chown www-data:www-data "$APP_DIR/.env.local"
+    chmod 600 "$APP_DIR/.env.local"
+    print_info "Environment configuration created: $APP_DIR/.env.local"
+    
     # Install dependencies
     print_info "Installing npm dependencies..."
     cd "$APP_DIR"
@@ -607,6 +621,8 @@ deploy_application() {
 }
 
 # Function to setup environment configuration
+# NOTE: This function is now integrated into deploy_application() 
+# and called before the build step to ensure .env.local exists during build
 setup_environment_config() {
     print_step "Setting up environment configuration..."
     
@@ -885,6 +901,191 @@ validate_dns_with_retry() {
             break
         fi
     done
+}
+
+# Function to validate MongoDB connection
+validate_mongodb_connection() {
+    print_step "Validating MongoDB connection..."
+    
+    # Check if Node.js is available
+    if ! command -v node >/dev/null 2>&1; then
+        print_warning "Node.js not found. Skipping database validation for now."
+        print_info "Database connection will be validated during application deployment."
+        return 0
+    fi
+    
+    # Create a temporary Node.js script to test the connection
+    local test_script="/tmp/mongodb_test.js"
+    cat > "$test_script" << 'EOF'
+const { MongoClient } = require('mongodb');
+
+async function testConnection() {
+    const uri = process.argv[2];
+    if (!uri) {
+        console.error('No MongoDB URI provided');
+        process.exit(1);
+    }
+    
+    let client;
+    try {
+        console.log('🔄 Connecting to MongoDB...');
+        client = new MongoClient(uri, {
+            serverSelectionTimeoutMS: 10000, // 10 second timeout
+            connectTimeoutMS: 10000,
+        });
+        
+        await client.connect();
+        console.log('✅ Successfully connected to MongoDB');
+        
+        // Test basic operations
+        const db = client.db();
+        const collections = await db.listCollections().toArray();
+        console.log(`📊 Database accessible, found ${collections.length} collections`);
+        
+        // Test write permissions
+        const testCollection = db.collection('connection_test');
+        await testCollection.insertOne({ test: true, timestamp: new Date() });
+        await testCollection.deleteOne({ test: true });
+        console.log('✅ Database write permissions confirmed');
+        
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ MongoDB connection failed:');
+        if (error.message.includes('authentication failed')) {
+            console.error('   Authentication failed - check username/password');
+        } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+            console.error('   Cannot reach database server - check host/port');
+        } else if (error.message.includes('timeout')) {
+            console.error('   Connection timeout - check network/firewall');
+        } else {
+            console.error('   ' + error.message);
+        }
+        process.exit(1);
+    } finally {
+        if (client) {
+            await client.close();
+        }
+    }
+}
+
+testConnection();
+EOF
+    
+    # Install mongodb package temporarily for testing
+    print_info "Installing MongoDB client for connection testing..."
+    cd /tmp
+    
+    # Create a minimal package.json for the test
+    cat > package.json << 'EOF'
+{
+  "name": "mongodb-test",
+  "version": "1.0.0",
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  }
+}
+EOF
+    
+    # Install mongodb package quietly
+    if ! npm install --silent --no-progress 2>/dev/null; then
+        print_error "Failed to install MongoDB client for testing"
+        rm -f "$test_script" package.json
+        return 1
+    fi
+    
+    # Test the connection
+    if node "$test_script" "$MONGODB_URI" 2>&1; then
+        print_status "MongoDB connection validated successfully!"
+        rm -f "$test_script" package.json
+        rm -rf node_modules package-lock.json
+        return 0
+    else
+        print_error "MongoDB connection failed!"
+        rm -f "$test_script" package.json
+        rm -rf node_modules package-lock.json
+        return 1
+    fi
+}
+
+# Function to collect and validate database configuration
+collect_and_validate_database_config() {
+    while true; do
+        echo ""
+        print_step "Database Configuration"
+        print_info "MongoDB connection string (local or cloud like MongoDB Atlas)"
+        print_info "Examples:"
+        print_info "  Local: mongodb://localhost:27017/community"
+        print_info "  Atlas: mongodb+srv://username:password@cluster.mongodb.net/community"
+        print_info "  With Auth: mongodb://username:password@localhost:27017/community"
+        echo ""
+        
+        prompt_input "MongoDB URI" "mongodb://localhost:27017/community" "MONGODB_URI"
+        
+        # Skip validation in non-interactive mode
+        if [ "$INTERACTIVE" = false ]; then
+            print_info "Skipping database validation in non-interactive mode"
+            break
+        fi
+        
+        # Validate the connection
+        if validate_mongodb_connection; then
+            break
+        else
+            echo ""
+            print_warning "Database connection failed. Please check your MongoDB URI."
+            print_info "Common issues:"
+            print_info "  • Incorrect username/password"
+            print_info "  • Wrong host/port"
+            print_info "  • Database server not running"
+            print_info "  • Network/firewall blocking connection"
+            print_info "  • Missing database name in URI"
+            echo ""
+            
+            if prompt_yes_no "Would you like to try a different MongoDB URI?" "y"; then
+                continue
+            else
+                print_error "Database connection is required for installation."
+                print_info "Please fix your MongoDB configuration and run the installer again."
+                exit 1
+            fi
+        fi
+    done
+}
+
+# Function to perform final database validation after Node.js is installed
+validate_database_connection_final() {
+    print_step "Final database connection validation..."
+    
+    # Skip in non-interactive mode
+    if [ "$INTERACTIVE" = false ]; then
+        print_info "Skipping final database validation in non-interactive mode"
+        return 0
+    fi
+    
+    # Validate the connection now that Node.js is available
+    if validate_mongodb_connection; then
+        print_status "Database connection confirmed!"
+        return 0
+    else
+        print_error "Database connection failed after Node.js installation."
+        print_info "This could indicate a network issue or incorrect MongoDB configuration."
+        
+        if prompt_yes_no "Would you like to update your MongoDB URI and try again?" "y"; then
+            collect_and_validate_database_config
+            # Try validation one more time
+            if validate_mongodb_connection; then
+                print_status "Database connection confirmed!"
+                return 0
+            else
+                print_error "Database connection still failing. Installation cannot continue."
+                exit 1
+            fi
+        else
+            print_error "Database connection is required for the application to work."
+            print_info "Please fix your MongoDB configuration and run the installer again."
+            exit 1
+        fi
+    fi
 }
 
 # Function to validate DNS before SSL setup
@@ -1433,9 +1634,9 @@ main() {
     detect_os
     collect_configuration
     install_system_packages
+    validate_database_connection_final
     setup_application_environment
     install_pm2
-    setup_environment_config
     deploy_application
     configure_nginx
     setup_pm2_config
