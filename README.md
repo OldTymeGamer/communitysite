@@ -87,8 +87,7 @@ The installation script will guide you through:
 
 ## 🤝 Community
 
-- **Discord Server**: [Join our community](https://discord.gg/your-invite)
-- **Website**: [your-community.com](https://your-community.com)
+- **Discord Server**: [Join our community](https://discord.gg/yEwUUnP5bK)
 - **Support**: Create an issue or contact administrators
 
 ## 📄 License
