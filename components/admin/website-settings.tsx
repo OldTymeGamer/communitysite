@@ -26,18 +26,71 @@ import { toast } from "sonner"
 
 interface WebsiteSettings {
   siteName: string
+  siteDescription: string
   heroTitle: string
   heroDescription: string
-  galleryImages: string[]
+  heroBackgroundImage: string
+  galleryImages: Array<{
+    url: string
+    caption?: string
+    alt?: string
+  }>
   socialLinks: {
     discord: string
     twitter: string
     youtube: string
     twitch: string
+    steam: string
+    facebook: string
   }
   contactEmail: string
-  primaryColor: string
-  secondaryColor: string
+  colors: {
+    primary: string
+    secondary: string
+    accent: string
+    background: string
+    surface: string
+    text: string
+  }
+  integrations: {
+    discord: {
+      enabled: boolean
+      clientId: string
+      clientSecret: string
+      botToken: string
+      guildId: string
+    }
+    steam: {
+      enabled: boolean
+      apiKey: string
+    }
+    google: {
+      enabled: boolean
+      clientId: string
+      clientSecret: string
+    }
+  }
+  emailSettings: {
+    smtpHost: string
+    smtpPort: number
+    smtpUser: string
+    smtpPassword: string
+    fromEmail: string
+    fromName: string
+  }
+  features: {
+    userRegistration: boolean
+    emailVerification: boolean
+    serverListing: boolean
+    communityForum: boolean
+    eventCalendar: boolean
+  }
+  seo: {
+    metaTitle: string
+    metaDescription: string
+    keywords: string
+    ogImage: string
+  }
 }
 
 interface UpdateInfo {
@@ -50,18 +103,72 @@ interface UpdateInfo {
 export function WebsiteSettings() {
   const [settings, setSettings] = useState<WebsiteSettings>({
     siteName: "Community Website",
-    heroTitle: "Welcome to the Wild West",
-    heroDescription: "Join the ultimate Red Dead Redemption 2 multiplayer community. Experience authentic roleplay, epic adventures, and forge your legend in the frontier.",
-    galleryImages: ["/gallery1.jpg", "/gallery2.jpg", "/gallery3.jpg", "/gallery4.jpg"],
+    siteDescription: "A multi-game community platform",
+    heroTitle: "Welcome to Our Gaming Community",
+    heroDescription: "Join our multi-game community. Experience epic adventures, connect with players, and forge your legend across multiple gaming platforms.",
+    heroBackgroundImage: "",
+    galleryImages: [
+      { url: "/gallery1.jpg", caption: "", alt: "" },
+      { url: "/gallery2.jpg", caption: "", alt: "" },
+      { url: "/gallery3.jpg", caption: "", alt: "" },
+      { url: "/gallery4.jpg", caption: "", alt: "" }
+    ],
     socialLinks: {
       discord: "",
       twitter: "",
       youtube: "",
-      twitch: ""
+      twitch: "",
+      steam: "",
+      facebook: ""
     },
     contactEmail: "",
-    primaryColor: "#FFC107",
-    secondaryColor: "#4FC3F7"
+    colors: {
+      primary: "#FFC107",
+      secondary: "#4FC3F7",
+      accent: "#8BC34A",
+      background: "#1A1A1A",
+      surface: "#2D2D2D",
+      text: "#FFFFFF"
+    },
+    integrations: {
+      discord: {
+        enabled: false,
+        clientId: "",
+        clientSecret: "",
+        botToken: "",
+        guildId: ""
+      },
+      steam: {
+        enabled: false,
+        apiKey: ""
+      },
+      google: {
+        enabled: false,
+        clientId: "",
+        clientSecret: ""
+      }
+    },
+    emailSettings: {
+      smtpHost: "",
+      smtpPort: 587,
+      smtpUser: "",
+      smtpPassword: "",
+      fromEmail: "",
+      fromName: ""
+    },
+    features: {
+      userRegistration: true,
+      emailVerification: true,
+      serverListing: true,
+      communityForum: false,
+      eventCalendar: false
+    },
+    seo: {
+      metaTitle: "",
+      metaDescription: "",
+      keywords: "",
+      ogImage: ""
+    }
   })
 
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo>({
@@ -107,7 +214,7 @@ export function WebsiteSettings() {
     setIsLoading(true)
     try {
       const response = await fetch("/api/admin/website-settings", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
       })
@@ -115,7 +222,8 @@ export function WebsiteSettings() {
       if (response.ok) {
         toast.success("Settings saved successfully!")
       } else {
-        toast.error("Failed to save settings")
+        const data = await response.json()
+        toast.error(data.error || "Failed to save settings")
       }
     } catch (error) {
       toast.error("Failed to save settings")
@@ -152,7 +260,6 @@ export function WebsiteSettings() {
 
     const formData = new FormData()
     formData.append("image", file)
-    formData.append("index", index.toString())
 
     try {
       const response = await fetch("/api/admin/upload-gallery-image", {
@@ -163,11 +270,12 @@ export function WebsiteSettings() {
       if (response.ok) {
         const data = await response.json()
         const newImages = [...settings.galleryImages]
-        newImages[index] = data.url
+        newImages[index] = { ...newImages[index], url: data.url }
         setSettings({ ...settings, galleryImages: newImages })
         toast.success("Image uploaded successfully!")
       } else {
-        toast.error("Failed to upload image")
+        const errorData = await response.json()
+        toast.error(errorData.error || "Failed to upload image")
       }
     } catch (error) {
       toast.error("Failed to upload image")

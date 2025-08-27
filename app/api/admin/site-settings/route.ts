@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
 import { connectToDatabase } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getAuthUser(request)
     
-    if (!session?.user?.isAdmin) {
+    if (!user || (!user.isAdmin && !user.isOwner)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -51,9 +50,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getAuthUser(request)
     
-    if (!session?.user?.isAdmin) {
+    if (!user || (!user.isAdmin && !user.isOwner)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

@@ -1,66 +1,54 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth"
 import { connectDB } from "@/lib/db"
 import { WebsiteSettings } from "@/lib/models/WebsiteSettings"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     await connectDB()
     
+    // Get website settings (no auth required for reading)
     let settings = await WebsiteSettings.findOne()
+    
     if (!settings) {
       // Create default settings if none exist
-      settings = await WebsiteSettings.create({
-        siteName: "Community Website",
-        heroTitle: "Welcome to the Wild West",
-        heroDescription: "Join the ultimate Red Dead Redemption 2 multiplayer community. Experience authentic roleplay, epic adventures, and forge your legend in the frontier.",
-        galleryImages: ["/gallery1.jpg", "/gallery2.jpg", "/gallery3.jpg", "/gallery4.jpg"],
-        socialLinks: {
-          discord: "",
-          twitter: "",
-          youtube: "",
-          twitch: ""
-        },
-        contactEmail: "",
-        primaryColor: "#FFC107",
-        secondaryColor: "#4FC3F7"
-      })
+      settings = new WebsiteSettings({})
+      await settings.save()
     }
-
+    
     return NextResponse.json(settings)
   } catch (error) {
     console.error("Error fetching website settings:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const data = await request.json()
+    const user = await requireAdmin(request)
     await connectDB()
-
+    
+    const updateData = await request.json()
+    
     let settings = await WebsiteSettings.findOne()
-    if (settings) {
-      Object.assign(settings, data)
-      await settings.save()
+    
+    if (!settings) {
+      settings = new WebsiteSettings(updateData)
     } else {
-      settings = await WebsiteSettings.create(data)
+      Object.assign(settings, updateData)
     }
-
-    return NextResponse.json(settings)
+    
+    await settings.save()
+    
+    return NextResponse.json({ 
+      message: "Website settings updated successfully",
+      settings 
+    })
   } catch (error) {
-    console.error("Error saving website settings:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error updating website settings:", error)
+    if (error.message === "Authentication required" || error.message === "Admin access required") {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    return NextResponse.json({ error: "Failed to update settings" }, { status: 500 })
   }
 }

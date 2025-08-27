@@ -1,80 +1,63 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getAuthUser } from "@/lib/auth"
-import dbConnect from "@/lib/db"
-import { GameServer } from "@/lib/models/GameServer"
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/auth'
+import { connectDB } from '@/lib/db'
+import { GameServer } from '@/lib/models/GameServer'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user || (!user.isAdmin && !user.isOwner)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    await dbConnect()
-    const servers = await GameServer.find().sort({ createdAt: -1 })
+    const user = await requireAdmin(request)
+    await connectDB()
     
-    // Update server status for each server
-    for (const server of servers) {
-      await updateServerStatus(server)
-    }
+    const servers = await GameServer.find().sort({ createdAt: -1 })
     
     return NextResponse.json(servers)
   } catch (error) {
-    console.error("Error fetching servers:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Error fetching servers:', error)
+    if (error.message === 'Authentication required' || error.message === 'Admin access required') {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    return NextResponse.json({ error: 'Failed to fetch servers' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const data = await request.json()
-    await dbConnect()
-
-    const server = await GameServer.create(data)
-    await updateServerStatus(server)
+    const user = await requireAdmin(request)
+    await connectDB()
     
-    return NextResponse.json(server)
-  } catch (error) {
-    console.error("Error creating server:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
-}
-
-async function updateServerStatus(server: any) {
-  try {
-    const startTime = Date.now()
+    const serverData = await request.json()
     
-    // Try to ping the server
-    const response = await fetch(`http://${server.ip}:${server.port}/info.json`, {
-      method: 'GET',
-      timeout: 5000,
-    }).catch(() => null)
-    
-    const ping = Date.now() - startTime
-    
-    if (response && response.ok) {
-      const data = await response.json().catch(() => ({}))
-      
-      server.isOnline = true
-      server.playerCount = data.clients || 0
-      server.maxPlayers = data.sv_maxclients || 32
-      server.ping = ping
-    } else {
-      server.isOnline = false
-      server.ping = ping > 5000 ? 999 : ping
+    // Validate required fields
+    if (!serverData.name || !serverData.ip || !serverData.port) {
+      return NextResponse.json({ error: 'Name, IP, and port are required' }, { status: 400 })
     }
     
-    server.lastChecked = new Date()
+    // Check if server with same IP:port already exists
+    const existingServer = await GameServer.findOne({
+      ip: serverData.ip,
+      port: serverData.port
+    })
+    
+    if (existingServer) {
+      return NextResponse.json({ error: 'Server with this IP and port already exists' }, { status: 400 })
+    }
+    
+    const server = new GameServer({
+      ...serverData,
+      lastChecked: new Date()
+    })
+    
     await server.save()
+    
+    return NextResponse.json({
+      message: 'Server created successfully',
+      server
+    })
   } catch (error) {
-    server.isOnline = false
-    server.ping = 999
-    server.lastChecked = new Date()
-    await server.save()
+    console.error('Error creating server:', error)
+    if (error.message === 'Authentication required' || error.message === 'Admin access required') {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    return NextResponse.json({ error: 'Failed to create server' }, { status: 500 })
   }
 }

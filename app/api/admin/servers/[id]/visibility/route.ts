@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/auth"
 import { connectDB } from "@/lib/db"
 import { GameServer } from "@/lib/models/GameServer"
 
@@ -9,8 +8,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.isAdmin) {
+    const user = await getAuthUser(request)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

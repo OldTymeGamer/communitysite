@@ -18,7 +18,11 @@ interface WebsiteSettings {
   siteName: string
   heroTitle: string
   heroDescription: string
-  galleryImages: string[]
+  galleryImages: Array<{
+    url: string
+    caption?: string
+    alt?: string
+  }>
 }
 
 const defaultImages = [
@@ -33,9 +37,9 @@ export function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [settings, setSettings] = useState<WebsiteSettings>({
     siteName: "Community Website",
-    heroTitle: "Welcome to the Wild West",
-    heroDescription: "Join the ultimate Red Dead Redemption 2 multiplayer community. Experience authentic roleplay, epic adventures, and forge your legend in the frontier.",
-    galleryImages: defaultImages
+    heroTitle: "Welcome to Our Gaming Community",
+    heroDescription: "Join our multi-game community. Experience epic adventures, connect with players, and forge your legend across multiple gaming platforms.",
+    galleryImages: defaultImages.map(url => ({ url }))
   })
   const [shuffledImages, setShuffledImages] = useState<string[]>(defaultImages)
   const [discordCount, setDiscordCount] = useState<number>(0)
@@ -56,7 +60,8 @@ export function HeroSection() {
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
-        setShuffledImages(data.galleryImages || defaultImages)
+        const imageUrls = data.galleryImages?.map((img: any) => img.url || img) || defaultImages
+        setShuffledImages(imageUrls)
       }
     } catch (error) {
       console.error("Failed to fetch website settings:", error)
@@ -64,10 +69,10 @@ export function HeroSection() {
   }
 
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || shuffledImages.length === 0) return
 
     // Shuffle images for non-deterministic order each load
-    const shuffled = [...heroImages]
+    const shuffled = [...shuffledImages]
       .map((src) => ({ src, sort: Math.random() }))
       .sort((a, b) => a.sort - b.sort)
       .map(({ src }) => src)
@@ -78,7 +83,7 @@ export function HeroSection() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [mounted])
+  }, [mounted, shuffledImages.length])
 
   useEffect(() => {
     async function fetchMembers() {
@@ -96,9 +101,12 @@ export function HeroSection() {
   useEffect(() => {
     async function fetchGamePlayers() {
       try {
-        const res = await fetch("/api/server/players", { cache: "no-store" })
+        const res = await fetch("/api/servers/public", { cache: "no-store" })
         const data = await res.json()
-        if (typeof data?.count === "number") setGamePlayerCount(data.count)
+        if (Array.isArray(data)) {
+          const totalPlayers = data.reduce((sum, server) => sum + (server.playerCount || 0), 0)
+          setGamePlayerCount(totalPlayers)
+        }
       } catch {}
     }
     fetchGamePlayers()

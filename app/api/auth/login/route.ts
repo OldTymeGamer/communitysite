@@ -1,65 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server'
-import dbConnect from '@/lib/db'
+import { connectDB } from '@/lib/db'
 import User from '@/lib/models/User'
+import { generateToken } from '@/lib/auth'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect()
+    await connectDB()
     
-    const { username, password } = await request.json()
-
-    // Validate required fields
-    if (!username || !password) {
-      return NextResponse.json(
-        { error: 'Username and password are required' },
-        { status: 400 }
-      )
+    const { email, password } = await request.json()
+    
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
-
-    // Find user by username or email
-    const user = await User.findOne({
-      $or: [{ username }, { email: username }]
-    })
-
+    
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() })
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
-
-    // Check password
-    const isPasswordValid = await user.comparePassword(password)
     
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
+    // Check password
+    const isValidPassword = await user.comparePassword(password)
+    if (!isValidPassword) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
-
-    // Return user without password
-    const userResponse = {
-      id: user._id,
+    
+    // Check if email is verified (unless it's the owner)
+    if (!user.isEmailVerified && !user.isOwner) {
+      return NextResponse.json({ 
+        error: 'Please verify your email before logging in',
+        needsVerification: true 
+      }, { status: 401 })
+    }
+    
+    // Generate JWT token
+    const token = generateToken({
+      id: user._id.toString(),
       username: user.username,
       email: user.email,
-      discordId: user.discordId,
-      discordUsername: user.discordUsername,
-      discordAvatar: user.discordAvatar,
-      isDiscordConnected: user.isDiscordConnected,
-      createdAt: user.createdAt
-    }
-
-    return NextResponse.json(
-      { message: 'Login successful', user: userResponse },
-      { status: 200 }
-    )
-  } catch (error: any) {
-    console.error('Login error:', error)
+      isAdmin: user.isAdmin,
+      isOwner: user.isOwner
+    })
     
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    // Set cookie
+    const cookieStore = cookies()
+    cookieStore.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    })
+    
+    return NextResponse.json({
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        isOwner: user.isOwner
+      }
+    })
+  } catch (error) {
+    console.error('Login error:', error)
+    return NextResponse.json({ error: 'Login failed' }, { status: 500 })
   }
 }

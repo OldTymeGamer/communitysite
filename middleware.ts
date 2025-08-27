@@ -1,53 +1,45 @@
-import { withAuth } from "next-auth/middleware"
-import { NextResponse } from "next/server"
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { verifyToken } from './lib/auth'
 
-export default withAuth(
-  async function middleware(req) {
-    const token = req.nextauth.token
-    const isAdminRoute = req.nextUrl.pathname.startsWith("/admin")
-    
-    if (isAdminRoute && token?.discordId) {
-      // Check if user has admin role in Discord
-      const adminRoleIds = process.env.DISCORD_ADMIN_ROLE_IDS?.split(",") || []
-      
-      try {
-        const guildId = process.env.DISCORD_GUILD_ID
-        const botToken = process.env.DISCORD_BOT_TOKEN
-        
-        const memberRes = await fetch(
-          `https://discord.com/api/v10/guilds/${guildId}/members/${token.discordId}`,
-          {
-            headers: { Authorization: `Bot ${botToken}` },
-          }
-        )
-        
-        if (memberRes.ok) {
-          const member = await memberRes.json()
-          const hasAdminRole = member.roles?.some((roleId: string) => 
-            adminRoleIds.includes(roleId)
-          )
-          
-          if (!hasAdminRole) {
-            return NextResponse.redirect(new URL("/", req.url))
-          }
-        } else {
-          return NextResponse.redirect(new URL("/", req.url))
-        }
-      } catch (error) {
-        console.error("Error checking Discord roles:", error)
-        return NextResponse.redirect(new URL("/", req.url))
-      }
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Protect admin routes
+  if (pathname.startsWith('/admin')) {
+    const token = request.cookies.get('auth-token')?.value
+
+    if (!token) {
+      return NextResponse.redirect(new URL('/login?redirect=/admin', request.url))
     }
-    
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+
+    const user = verifyToken(token)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
+      return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
+    }
   }
-)
+
+  // Protect API admin routes
+  if (pathname.startsWith('/api/admin')) {
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
+
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const user = verifyToken(token)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
-  matcher: ["/admin/:path*"]
+  matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*'
+  ]
 }

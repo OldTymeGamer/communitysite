@@ -1,59 +1,49 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthUser } from "@/lib/auth"
-import { exec } from "child_process"
-import { promisify } from "util"
-
-const execAsync = promisify(exec)
+import { requireAdmin } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser(request)
-    if (!user || (!user.isAdmin && !user.isOwner)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Get current version from package.json
-    const packageJson = require("@/package.json")
-    const currentVersion = packageJson.version || "1.0.0"
-
-    try {
-      // Check for updates from git
-      await execAsync("git fetch origin main")
-      const { stdout: localCommit } = await execAsync("git rev-parse HEAD")
-      const { stdout: remoteCommit } = await execAsync("git rev-parse origin/main")
-      
-      const hasUpdate = localCommit.trim() !== remoteCommit.trim()
-      
-      let changelog: string[] = []
-      if (hasUpdate) {
-        try {
-          const { stdout: logOutput } = await execAsync(`git log --oneline ${localCommit.trim()}..${remoteCommit.trim()}`)
-          changelog = logOutput.split('\n').filter(line => line.trim()).map(line => {
-            const parts = line.split(' ')
-            return parts.slice(1).join(' ')
-          })
-        } catch (error) {
-          changelog = ["Updates available"]
-        }
+    const user = await requireAdmin(request)
+    
+    // Check for updates from GitHub
+    const response = await fetch('https://api.github.com/repos/your-username/community-website/releases/latest', {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Community-Website'
       }
-
-      return NextResponse.json({
-        currentVersion,
-        latestVersion: hasUpdate ? "Latest" : currentVersion,
-        hasUpdate,
-        changelog
-      })
-    } catch (error) {
-      // If git commands fail, assume no updates
-      return NextResponse.json({
-        currentVersion,
-        latestVersion: currentVersion,
-        hasUpdate: false,
-        changelog: []
+    })
+    
+    if (!response.ok) {
+      return NextResponse.json({ 
+        updateAvailable: false,
+        error: "Unable to check for updates" 
       })
     }
+    
+    const latestRelease = await response.json()
+    
+    // Get current version from package.json
+    const packageJson = require('../../../../package.json')
+    const currentVersion = packageJson.version
+    
+    const updateAvailable = latestRelease.tag_name !== `v${currentVersion}`
+    
+    return NextResponse.json({
+      updateAvailable,
+      currentVersion,
+      latestVersion: latestRelease.tag_name,
+      releaseNotes: latestRelease.body,
+      releaseUrl: latestRelease.html_url,
+      publishedAt: latestRelease.published_at
+    })
   } catch (error) {
     console.error("Error checking for updates:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    if (error.message === "Authentication required" || error.message === "Admin access required") {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    return NextResponse.json({ 
+      updateAvailable: false,
+      error: "Failed to check for updates" 
+    }, { status: 500 })
   }
 }

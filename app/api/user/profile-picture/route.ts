@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getAuthUser } from '@/lib/auth'
 import dbConnect from '@/lib/db'
 import User from '@/lib/models/User'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession()
+    const user = await getAuthUser(request)
     
-    if (!session?.user?.email) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
 
     await dbConnect()
     
-    const user = await User.findOne({ email: session.user.email })
+    const dbUser = await User.findById(user.id)
     
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Update profile picture
-    user.profilePicture = profilePicture
-    await user.save()
+    dbUser.profilePicture = profilePicture
+    await dbUser.save()
 
     return NextResponse.json(
       { 
         message: 'Profile picture updated successfully',
-        profilePicture: user.profilePicture
+        profilePicture: dbUser.profilePicture
       },
       { status: 200 }
     )
@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession()
+    const user = await getAuthUser(request)
     
-    if (!session?.user?.email) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -68,9 +68,9 @@ export async function DELETE(request: NextRequest) {
 
     await dbConnect()
     
-    const user = await User.findOne({ email: session.user.email })
+    const dbUser = await User.findById(user.id)
     
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -78,8 +78,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove profile picture
-    user.profilePicture = null
-    await user.save()
+    dbUser.profilePicture = null
+    await dbUser.save()
 
     return NextResponse.json(
       { message: 'Profile picture removed successfully' },

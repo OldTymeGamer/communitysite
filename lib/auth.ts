@@ -1,20 +1,14 @@
 import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
-import dbConnect from '@/lib/db'
-import User from '@/lib/models/User'
+import { connectDB } from './db'
+import User from './models/User'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export interface AuthUser {
   id: string
   username: string
-  email?: string
-  profilePicture?: string
-  discordId?: string
-  discordUsername?: string
-  discordAvatar?: string
-  isDiscordConnected: boolean
-  isEmailVerified: boolean
+  email: string
   isAdmin: boolean
   isOwner: boolean
 }
@@ -33,9 +27,10 @@ export function generateToken(user: AuthUser): string {
   )
 }
 
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): AuthUser | null {
   try {
-    return jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser
+    return decoded
   } catch (error) {
     return null
   }
@@ -43,42 +38,27 @@ export function verifyToken(token: string): any {
 
 export async function getAuthUser(request: NextRequest): Promise<AuthUser | null> {
   try {
-    const authHeader = request.headers.get('authorization')
-    const cookieToken = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
     
-    const token = authHeader?.replace('Bearer ', '') || cookieToken
+    if (!token) return null
     
-    if (!token) {
-      return null
-    }
-
     const decoded = verifyToken(token)
-    if (!decoded) {
-      return null
-    }
-
-    await dbConnect()
-    const user = await User.findById(decoded.id)
+    if (!decoded) return null
     
-    if (!user) {
-      return null
-    }
-
+    // Verify user still exists and get fresh data
+    await connectDB()
+    const user = await User.findById(decoded.id)
+    if (!user) return null
+    
     return {
       id: user._id.toString(),
       username: user.username,
       email: user.email,
-      profilePicture: user.profilePicture,
-      discordId: user.discordId,
-      discordUsername: user.discordUsername,
-      discordAvatar: user.discordAvatar,
-      isDiscordConnected: user.isDiscordConnected || false,
-      isEmailVerified: user.isEmailVerified || false,
-      isAdmin: user.isAdmin || false,
-      isOwner: user.isOwner || false
+      isAdmin: user.isAdmin,
+      isOwner: user.isOwner
     }
   } catch (error) {
-    console.error('Auth error:', error)
     return null
   }
 }

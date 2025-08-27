@@ -1,10 +1,15 @@
 import dbConnect from '@/lib/db'
 import User from '@/lib/models/User'
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await getAuthUser(request)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     await dbConnect()
     
     // Get all users with basic info
@@ -26,8 +31,13 @@ export async function GET() {
   }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await getAuthUser(request)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     await dbConnect()
     
     const { id } = await request.json()
