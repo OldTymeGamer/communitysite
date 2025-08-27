@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
-import { Server } from '@/lib/models/Server'
+import { GameServer } from '@/lib/models/GameServer'
 
 export async function GET() {
   try {
     await connectDB()
     
     // Get all public servers and sum their player counts
-    const servers = await Server.find({ isPublic: true, isOnline: true })
+    const servers = await GameServer.find({ isPublic: true, isOnline: true })
     
     const totalPlayers = servers.reduce((sum, server) => sum + (server.playerCount || 0), 0)
     const totalMaxPlayers = servers.reduce((sum, server) => sum + (server.maxPlayers || 0), 0)
