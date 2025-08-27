@@ -27,26 +27,7 @@ function useGeolocation() {
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null)
 
   useEffect(() => {
-    // Check if we're in a secure context (HTTPS) before requesting geolocation
-    if (typeof window !== 'undefined' && window.isSecureContext && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          })
-        },
-        (error) => {
-          console.log("Geolocation error:", error)
-          // Fallback to IP-based location
-          tryIPGeolocation()
-        }
-      )
-    } else {
-      // If not secure context or no geolocation, try IP-based location
-      tryIPGeolocation()
-    }
-
+    // Only use IP-based location, no GPS/location permission required
     function tryIPGeolocation() {
       fetch('https://ipapi.co/json/')
         .then(res => res.json())
@@ -60,6 +41,8 @@ function useGeolocation() {
         })
         .catch(() => console.log("IP geolocation failed"))
     }
+
+    tryIPGeolocation()
   }, [])
 
   return location

@@ -322,10 +322,14 @@ export function WebsiteSettings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-charcoal-light/50 border border-amber-gold/20">
+        <TabsList className="grid w-full grid-cols-5 bg-charcoal-light/50 border border-amber-gold/20">
           <TabsTrigger value="general" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
             <Settings className="w-4 h-4 mr-2" />
             General
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
+            <Link className="w-4 h-4 mr-2" />
+            Integrations
           </TabsTrigger>
           <TabsTrigger value="gallery" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
             <ImageIcon className="w-4 h-4 mr-2" />
@@ -430,6 +434,198 @@ export function WebsiteSettings() {
                     />
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="integrations">
+          <Card className="bg-charcoal-light/80 border-amber-gold/20">
+            <CardHeader>
+              <CardTitle className="text-amber-gold flex items-center gap-2">
+                <Link className="w-5 h-5" />
+                Integration Settings
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Configure third-party integrations and services
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Discord Integration */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-sage-green">Discord Integration</h3>
+                    <p className="text-sage-green/60 text-sm">Enable Discord login and server integration</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="discord-enabled"
+                      checked={settings.integrations.discord.enabled}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        integrations: {
+                          ...settings.integrations,
+                          discord: {
+                            ...settings.integrations.discord,
+                            enabled: e.target.checked
+                          }
+                        }
+                      })}
+                      className="w-4 h-4 text-amber-gold bg-charcoal border-amber-gold/30 rounded focus:ring-amber-gold"
+                    />
+                    <Label htmlFor="discord-enabled" className="text-sage-green">
+                      {settings.integrations.discord.enabled ? 'Enabled' : 'Disabled'}
+                    </Label>
+                  </div>
+                </div>
+
+                {settings.integrations.discord.enabled && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-charcoal/50 rounded-lg border border-amber-gold/20">
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-client-id" className="text-sage-green">Client ID</Label>
+                      <Input
+                        id="discord-client-id"
+                        value={settings.integrations.discord.clientId}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          integrations: {
+                            ...settings.integrations,
+                            discord: {
+                              ...settings.integrations.discord,
+                              clientId: e.target.value
+                            }
+                          }
+                        })}
+                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        placeholder="Your Discord App Client ID"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-client-secret" className="text-sage-green">Client Secret</Label>
+                      <Input
+                        id="discord-client-secret"
+                        type="password"
+                        value={settings.integrations.discord.clientSecret}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          integrations: {
+                            ...settings.integrations,
+                            discord: {
+                              ...settings.integrations.discord,
+                              clientSecret: e.target.value
+                            }
+                          }
+                        })}
+                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        placeholder="Your Discord App Client Secret"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-bot-token" className="text-sage-green">Bot Token</Label>
+                      <Input
+                        id="discord-bot-token"
+                        type="password"
+                        value={settings.integrations.discord.botToken}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          integrations: {
+                            ...settings.integrations,
+                            discord: {
+                              ...settings.integrations.discord,
+                              botToken: e.target.value
+                            }
+                          }
+                        })}
+                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        placeholder="Your Discord Bot Token"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discord-guild-id" className="text-sage-green">Guild ID</Label>
+                      <Input
+                        id="discord-guild-id"
+                        value={settings.integrations.discord.guildId}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          integrations: {
+                            ...settings.integrations,
+                            discord: {
+                              ...settings.integrations.discord,
+                              guildId: e.target.value
+                            }
+                          }
+                        })}
+                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        placeholder="Your Discord Server ID"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Steam Integration */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-sage-green">Steam Integration</h3>
+                    <p className="text-sage-green/60 text-sm">Enable Steam login and game server integration</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="steam-enabled"
+                      checked={settings.integrations.steam.enabled}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        integrations: {
+                          ...settings.integrations,
+                          steam: {
+                            ...settings.integrations.steam,
+                            enabled: e.target.checked
+                          }
+                        }
+                      })}
+                      className="w-4 h-4 text-amber-gold bg-charcoal border-amber-gold/30 rounded focus:ring-amber-gold"
+                    />
+                    <Label htmlFor="steam-enabled" className="text-sage-green">
+                      {settings.integrations.steam.enabled ? 'Enabled' : 'Disabled'}
+                    </Label>
+                  </div>
+                </div>
+
+                {settings.integrations.steam.enabled && (
+                  <div className="p-4 bg-charcoal/50 rounded-lg border border-amber-gold/20">
+                    <div className="space-y-2">
+                      <Label htmlFor="steam-api-key" className="text-sage-green">Steam API Key</Label>
+                      <Input
+                        id="steam-api-key"
+                        type="password"
+                        value={settings.integrations.steam.apiKey}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          integrations: {
+                            ...settings.integrations,
+                            steam: {
+                              ...settings.integrations.steam,
+                              apiKey: e.target.value
+                            }
+                          }
+                        })}
+                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        placeholder="Your Steam Web API Key"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-amber-gold/20">
+                <p className="text-sage-green/60 text-sm">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
+                  Integration settings are saved automatically when you update website settings.
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -20,6 +20,27 @@ export default function ProfilePage() {
   const [profilePictureUrl, setProfilePictureUrl] = useState("")
   const [isUpdatingPicture, setIsUpdatingPicture] = useState(false)
   const [pictureError, setPictureError] = useState("")
+  const [discordEnabled, setDiscordEnabled] = useState(false)
+
+  // Check if Discord integration is enabled
+  useEffect(() => {
+    const checkDiscordIntegration = async () => {
+      try {
+        const response = await fetch('/api/website-settings')
+        if (response.ok) {
+          const data = await response.json()
+          setDiscordEnabled(data.integrations?.discord?.enabled || false)
+        }
+      } catch (error) {
+        console.error('Failed to check Discord integration:', error)
+        setDiscordEnabled(false)
+      }
+    }
+
+    if (user) {
+      checkDiscordIntegration()
+    }
+  }, [user])
 
   if (loading) {
     return (
@@ -271,12 +292,13 @@ export default function ProfilePage() {
 
               <Separator className="bg-amber-gold/20" />
 
-              {/* Discord Connection */}
-              <div>
-                <h3 className="text-lg font-semibold text-amber-gold mb-4 flex items-center">
-                  <LinkIcon className="mr-2 h-5 w-5" />
-                  Discord Connection
-                </h3>
+              {/* Discord Connection - Only show if Discord integration is enabled */}
+              {discordEnabled && (
+                <div>
+                  <h3 className="text-lg font-semibold text-amber-gold mb-4 flex items-center">
+                    <LinkIcon className="mr-2 h-5 w-5" />
+                    Discord Connection
+                  </h3>
                 
                 {user?.isDiscordConnected ? (
                   <div className="space-y-4">
@@ -330,7 +352,8 @@ export default function ProfilePage() {
                     </Button>
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

@@ -11,8 +11,6 @@ export async function POST(request: NextRequest) {
     const { email, username, password } = await request.json()
     const loginField = email || username
     
-    console.log('Login attempt:', { loginField, hasPassword: !!password })
-    
     if (!loginField || !password) {
       return NextResponse.json({ error: 'Email/username and password are required' }, { status: 400 })
     }
@@ -24,27 +22,12 @@ export async function POST(request: NextRequest) {
         { username: loginField }
       ]
     })
-    
-    console.log('User search result:', {
-      found: !!user,
-      searchedFor: loginField,
-      userDetails: user ? {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        isOwner: user.isOwner,
-        hasPassword: !!user.password
-      } : null
-    })
-    
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
     
     // Check password
     const isValidPassword = await user.comparePassword(password)
-    console.log('Password validation:', { isValid: isValidPassword })
-    
     if (!isValidPassword) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }

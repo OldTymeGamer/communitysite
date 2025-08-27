@@ -6,8 +6,8 @@ export async function GET() {
 
   if (!token || !guildId) {
     return NextResponse.json(
-      { error: "Server misconfiguration: missing DISCORD_BOT_TOKEN or DISCORD_GUILD_ID" },
-      { status: 500 }
+      { count: null, error: "Discord integration not configured" },
+      { status: 200 }
     )
   }
 

@@ -38,6 +38,24 @@ export async function GET() {
           surface: "#2D2D2D",
           text: "#FFFFFF"
         },
+        integrations: {
+          discord: {
+            enabled: false,
+            clientId: "",
+            clientSecret: "",
+            botToken: "",
+            guildId: ""
+          },
+          steam: {
+            enabled: false,
+            apiKey: ""
+          },
+          google: {
+            enabled: false,
+            clientId: "",
+            clientSecret: ""
+          }
+        },
         features: {
           userRegistration: true,
           emailVerification: true,
@@ -64,6 +82,7 @@ export async function GET() {
       galleryImages: settings.galleryImages,
       socialLinks: settings.socialLinks,
       colors: settings.colors,
+      integrations: settings.integrations,
       features: settings.features,
       seo: settings.seo
     }
