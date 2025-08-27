@@ -8,14 +8,20 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB()
     
-    const { email, password } = await request.json()
+    const { email, username, password } = await request.json()
+    const loginField = email || username
     
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    if (!loginField || !password) {
+      return NextResponse.json({ error: 'Email/username and password are required' }, { status: 400 })
     }
     
-    // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() })
+    // Find user by email or username
+    const user = await User.findOne({
+      $or: [
+        { email: loginField.toLowerCase() },
+        { username: loginField }
+      ]
+    })
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }

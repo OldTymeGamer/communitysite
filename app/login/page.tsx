@@ -85,14 +85,14 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-sage-green">
-                  Username
+                  Email or Username
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-sage-green/60" />
                   <Input
                     id="username"
                     type="text"
-                    placeholder="Enter your username"
+                    placeholder="Enter your email or username"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     className="pl-10 bg-charcoal/50 border-amber-gold/30 text-sage-green placeholder:text-sage-green/50"
@@ -135,24 +135,7 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-amber-gold/20" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-charcoal-light text-sage-green/70">Or continue with</span>
-                </div>
-              </div>
-              
-              <Button
-                type="button"
-                onClick={() => signIn('discord', { callbackUrl: '/' })}
-                className="w-full mt-4 bg-[#5865F2] hover:bg-[#4752C4] text-white"
-              >
-                Continue with Discord
-              </Button>
-            </div>
+            {/* Discord login will be available after OAuth setup */}
 
             <div className="mt-6 space-y-4">
               <div className="flex justify-between text-sm">

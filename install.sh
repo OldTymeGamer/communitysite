@@ -662,10 +662,17 @@ configure_nginx() {
     if [ "$SETUP_SSL" = true ]; then
         # Start with HTTP-only configuration for SSL domain
         # Certbot will modify this to add SSL configuration
+        # Check if www subdomain should be included
+        if dig +short "www.$DOMAIN" >/dev/null 2>&1 && [ -n "$(dig +short "www.$DOMAIN")" ]; then
+            SERVER_NAMES="$DOMAIN www.$DOMAIN"
+        else
+            SERVER_NAMES="$DOMAIN"
+        fi
+        
         cat > "$NGINX_CONF" << EOF
 server {
     listen 80;
-    server_name $DOMAIN www.$DOMAIN;
+    server_name $SERVER_NAMES;
     
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -1182,7 +1189,18 @@ setup_ssl_certificate() {
         sleep 2
         
         print_info "Requesting SSL certificate for $DOMAIN..."
-        if certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos --email "$ADMIN_EMAIL"; then
+        
+        # Check if www subdomain exists
+        print_info "Checking if www.$DOMAIN has DNS record..."
+        if dig +short "www.$DOMAIN" >/dev/null 2>&1 && [ -n "$(dig +short "www.$DOMAIN")" ]; then
+            print_info "www.$DOMAIN DNS record found, requesting certificate for both domains..."
+            CERT_DOMAINS="-d $DOMAIN -d www.$DOMAIN"
+        else
+            print_info "www.$DOMAIN DNS record not found, requesting certificate for main domain only..."
+            CERT_DOMAINS="-d $DOMAIN"
+        fi
+        
+        if certbot --nginx $CERT_DOMAINS --non-interactive --agree-tos --email "$ADMIN_EMAIL"; then
             print_status "SSL certificate installed successfully"
             print_info "Your website is now available at: https://$DOMAIN"
             
