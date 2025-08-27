@@ -107,6 +107,12 @@ export function Navigation() {
                     </Button>
                   </motion.div>
                 )}
+                {/* Debug info - remove after testing */}
+                {process.env.NODE_ENV === 'development' && user && (
+                  <div className="text-xs text-sage-green/60 p-2 bg-charcoal/50 rounded">
+                    Debug: isAdmin={user.isAdmin?.toString()}, isOwner={user.isOwner?.toString()}
+                  </div>
+                )}
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     variant="ghost"

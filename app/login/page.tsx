@@ -42,6 +42,7 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
@@ -51,7 +52,7 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        login(data.token, data.user)
+        login('', data.user) // No token needed, it's in httpOnly cookie
         router.push('/')
       } else {
         setError(data.error || 'Login failed')
