@@ -6,9 +6,11 @@
 set -e
 
 # Check if running interactively
+INTERACTIVE=true
 if [ ! -t 0 ]; then
-    echo "⚠️  Warning: Not running in interactive mode"
-    echo "ℹ️  If prompts don't work, try: bash <(curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh)"
+    INTERACTIVE=false
+    echo "⚠️  Running in non-interactive mode - using defaults"
+    echo "ℹ️  For interactive setup, use: bash <(curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh)"
     echo ""
 fi
 
@@ -65,23 +67,46 @@ prompt_input() {
     local prompt="$1"
     local default="$2"
     local var_name="$3"
+    local input
     
-    if [ -n "$default" ]; then
-        printf "${CYAN}%s${NC} ${YELLOW}(default: %s)${NC}: " "$prompt" "$default"
-    else
-        printf "${CYAN}%s${NC}: " "$prompt"
+    # If not interactive, use default
+    if [ "$INTERACTIVE" = false ]; then
+        if [ -n "$default" ]; then
+            input="$default"
+            echo "${CYAN}$prompt${NC}: ${YELLOW}$default${NC} (auto-selected)"
+        else
+            echo "${CYAN}$prompt${NC}: ${RED}(no default available)${NC}"
+            input=""
+        fi
+        eval "$var_name='$input'"
+        return
     fi
     
-    # Try to read from /dev/tty if available, otherwise use stdin
-    if [ -r /dev/tty ]; then
-        read -r input < /dev/tty
-    else
-        read -r input
-    fi
-    
-    if [ -z "$input" ] && [ -n "$default" ]; then
-        input="$default"
-    fi
+    # Interactive mode
+    while true; do
+        if [ -n "$default" ]; then
+            echo -n -e "${CYAN}$prompt${NC} ${YELLOW}(default: $default)${NC}: " >&2
+        else
+            echo -n -e "${CYAN}$prompt${NC}: " >&2
+        fi
+        
+        # Read from terminal
+        if [ -c /dev/tty ]; then
+            read -r input < /dev/tty
+        else
+            read -r input
+        fi
+        
+        # Use default if empty
+        if [ -z "$input" ] && [ -n "$default" ]; then
+            input="$default"
+        fi
+        
+        # Break if we got input or no default required
+        if [ -n "$input" ] || [ -z "$default" ]; then
+            break
+        fi
+    done
     
     eval "$var_name='$input'"
 }
@@ -90,16 +115,30 @@ prompt_input() {
 prompt_yes_no() {
     local prompt="$1"
     local default="$2"
+    local yn
     
+    # If not interactive, use default
+    if [ "$INTERACTIVE" = false ]; then
+        yn="$default"
+        if [ "$default" = "y" ]; then
+            echo "${CYAN}$prompt${NC}: ${YELLOW}Yes${NC} (auto-selected)"
+            return 0
+        else
+            echo "${CYAN}$prompt${NC}: ${YELLOW}No${NC} (auto-selected)"
+            return 1
+        fi
+    fi
+    
+    # Interactive mode
     while true; do
         if [ "$default" = "y" ]; then
-            printf "${CYAN}%s${NC} ${YELLOW}(Y/n)${NC}: " "$prompt"
+            echo -n -e "${CYAN}$prompt${NC} ${YELLOW}(Y/n)${NC}: " >&2
         else
-            printf "${CYAN}%s${NC} ${YELLOW}(y/N)${NC}: " "$prompt"
+            echo -n -e "${CYAN}$prompt${NC} ${YELLOW}(y/N)${NC}: " >&2
         fi
         
-        # Try to read from /dev/tty if available, otherwise use stdin
-        if [ -r /dev/tty ]; then
+        # Read from terminal
+        if [ -c /dev/tty ]; then
             read -r yn < /dev/tty
         else
             read -r yn
@@ -112,7 +151,7 @@ prompt_yes_no() {
         case $yn in
             [Yy]* ) return 0;;
             [Nn]* ) return 1;;
-            * ) echo "Please answer yes or no.";;
+            * ) echo "Please answer yes or no." >&2;;
         esac
     done
 }
@@ -223,8 +262,16 @@ install_system_packages() {
 
 # Function to collect all configuration from user
 collect_configuration() {
+    collect_all_config
+    
+    # Skip confirmation in non-interactive mode
+    if [ "$INTERACTIVE" = false ]; then
+        display_config_summary
+        return
+    fi
+    
+    # Interactive confirmation loop
     while true; do
-        collect_all_config
         display_config_summary
         
         if prompt_yes_no "Is all configuration correct?" "y"; then
@@ -255,7 +302,13 @@ collect_all_config() {
     # SSL Configuration
     echo ""
     print_step "SSL Certificate Setup (recommended for production)"
-    if prompt_yes_no "Would you like to set up SSL with Let's Encrypt?" "y"; then
+    
+    # In non-interactive mode, skip SSL setup
+    if [ "$INTERACTIVE" = false ]; then
+        SETUP_SSL=false
+        print_info "SSL setup skipped in non-interactive mode"
+        print_info "You can set up SSL later using: sudo certbot --nginx"
+    elif prompt_yes_no "Would you like to set up SSL with Let's Encrypt?" "n"; then
         SETUP_SSL=true
         prompt_input "Domain name (without www, e.g., example.com)" "" "DOMAIN"
         prompt_input "Admin email for SSL certificate" "" "ADMIN_EMAIL"
