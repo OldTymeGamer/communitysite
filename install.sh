@@ -2,6 +2,14 @@
 
 # Community Website Installation Script
 # One-command installation for Linux servers with interactive configuration
+#
+# Installation Modes:
+# 1. Local Installation: Run from project directory - uses local files
+# 2. Remote Installation: Download from GitHub - for clean server deployments
+#
+# Usage:
+#   Local:  ./install.sh (from project directory)
+#   Remote: bash <(curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh)
 
 set -e
 
@@ -519,35 +527,59 @@ deploy_application() {
     # Create app directory
     mkdir -p "$APP_DIR"
     
-    # Clone or download the project
-    print_info "Downloading latest project files from GitHub..."
-    if command -v git >/dev/null 2>&1; then
-        # Use git clone if available
-        if [ -d "$APP_DIR/.git" ]; then
-            print_info "Updating existing git repository..."
-            cd "$APP_DIR"
-            git fetch origin
-            git reset --hard origin/main
-        else
-            print_info "Cloning repository..."
+    # Deploy project files
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    # Check if we're running from a local project directory
+    if [ -f "$SCRIPT_DIR/package.json" ] && [ -f "$SCRIPT_DIR/next.config.mjs" ]; then
+        print_info "Installing from local project files..."
+        
+        # Copy files from current directory to app directory
+        if [ "$SCRIPT_DIR" != "$APP_DIR" ]; then
+            print_info "Copying project files to $APP_DIR..."
             rm -rf "$APP_DIR"
-            git clone https://github.com/OldTymeGamer/communitysite.git "$APP_DIR"
+            cp -r "$SCRIPT_DIR" "$APP_DIR"
+            
+            # Remove .git directory to avoid ownership issues
+            rm -rf "$APP_DIR/.git"
+        else
+            print_info "Already in target directory, skipping file copy..."
         fi
     else
-        # Fallback to wget/curl
-        print_info "Downloading project archive..."
-        cd /tmp
-        if command -v wget >/dev/null 2>&1; then
-            wget -O communitysite.zip https://github.com/OldTymeGamer/communitysite/archive/refs/heads/main.zip
+        # Fallback: download from GitHub (for remote installation)
+        print_info "Downloading latest project files from GitHub..."
+        if command -v git >/dev/null 2>&1; then
+            # Use git clone if available
+            if [ -d "$APP_DIR/.git" ]; then
+                print_info "Updating existing git repository..."
+                cd "$APP_DIR"
+                # Fix ownership issues before git operations
+                git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+                git fetch origin
+                git reset --hard origin/main
+            else
+                print_info "Cloning repository..."
+                rm -rf "$APP_DIR"
+                git clone https://github.com/OldTymeGamer/communitysite.git "$APP_DIR"
+                # Remove .git directory after cloning to avoid future ownership issues
+                rm -rf "$APP_DIR/.git"
+            fi
         else
-            curl -L -o communitysite.zip https://github.com/OldTymeGamer/communitysite/archive/refs/heads/main.zip
+            # Fallback to wget/curl
+            print_info "Downloading project archive..."
+            cd /tmp
+            if command -v wget >/dev/null 2>&1; then
+                wget -O communitysite.zip https://github.com/OldTymeGamer/communitysite/archive/refs/heads/main.zip
+            else
+                curl -L -o communitysite.zip https://github.com/OldTymeGamer/communitysite/archive/refs/heads/main.zip
+            fi
+            
+            # Extract and move files
+            unzip -q communitysite.zip
+            rm -rf "$APP_DIR"
+            mv communitysite-main "$APP_DIR"
+            rm communitysite.zip
         fi
-        
-        # Extract and move files
-        unzip -q communitysite.zip
-        rm -rf "$APP_DIR"
-        mv communitysite-main "$APP_DIR"
-        rm communitysite.zip
     fi
     
     chown -R www-data:www-data "$APP_DIR"
