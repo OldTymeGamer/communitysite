@@ -6,20 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Users, Clock, MapPin, Wifi } from "lucide-react"
 
-const servers = [
-  {
-    id: 1,
-    name: "The Lost Trail RP",
-    description: "Authentic 1900 roleplay experience with custom jobs, businesses, and storylines.",
-    players: 0, // Will be populated from API
-    maxPlayers: 48, // Set your actual max players
-    location: "US East",
-    tags: ["Roleplay", "Whitelist", "Economy"],
-    uptime: "99.8%",
-    ip: process.env.NEXT_PUBLIC_REDM_SERVER_IP || "173.208.177.138",
-    port: process.env.NEXT_PUBLIC_REDM_SERVER_PORT || "30126",
-  },
-]
+interface Server {
+  _id: string
+  name: string
+  description: string
+  ip: string
+  port: number
+  gameType: "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
+  isPublic: boolean
+  isOnline: boolean
+  playerCount: number
+  maxPlayers: number
+  ping: number
+  lastChecked: string
+  createdAt: string
+}
 
 // Hook to get user's geolocation for better ping calculation
 function useGeolocation() {
@@ -167,35 +168,51 @@ export function FeaturedServers() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [showCopyToast, setShowCopyToast] = useState(false)
+  const [servers, setServers] = useState<Server[]>([])
   const userLocation = useGeolocation()
-  const serverData = useServerData()
+
+  // Fetch servers from API
+  useEffect(() => {
+    const fetchServers = async () => {
+      try {
+        const response = await fetch("/api/servers/public")
+        if (response.ok) {
+          const data = await response.json()
+          setServers(data.filter((server: Server) => server.isPublic && server.isOnline))
+        }
+      } catch (error) {
+        console.error("Failed to fetch servers:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchServers()
+    // Refresh server data every 30 seconds
+    const interval = setInterval(fetchServers, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const nextServer = () => {
-    setCurrentIndex((prev) => (prev + 1) % servers.length)
+    if (servers.length > 0) {
+      setCurrentIndex((prev) => (prev + 1) % servers.length)
+    }
   }
 
   const prevServer = () => {
-    setCurrentIndex((prev) => (prev - 1 + servers.length) % servers.length)
+    if (servers.length > 0) {
+      setCurrentIndex((prev) => (prev - 1 + servers.length) % servers.length)
+    }
+  }
+
+  // Don't render if no servers
+  if (servers.length === 0) {
+    return null
   }
 
   const currentServer = servers[currentIndex]
-  const ping = usePing(currentServer.ip, currentServer.port, userLocation)
+  const ping = usePing(currentServer.ip, currentServer.port.toString(), userLocation)
   const { color, label } = getPingStatus(ping)
-
-  // Use real server data if available, otherwise fall back to static data
-  const displayData = {
-    ...currentServer,
-    players: serverData?.players ?? currentServer.players,
-    maxPlayers: serverData?.maxPlayers ?? currentServer.maxPlayers,
-    name: serverData?.serverName ?? currentServer.name,
-  }
-
-  // Set loading to false once we have some data
-  useEffect(() => {
-    if (serverData !== null || ping !== null) {
-      setIsLoading(false)
-    }
-  }, [serverData, ping])
 
   return (
     <section className="py-20 bg-gradient-to-b from-background to-card/20">
@@ -226,25 +243,28 @@ export function FeaturedServers() {
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
                   <div className="flex items-center gap-3 mb-4">
-                    <h3 className="text-2xl font-bold text-foreground">{displayData.name}</h3>
+                    <h3 className="text-2xl font-bold text-foreground">{currentServer.name}</h3>
                     <div className="flex items-center gap-1">
                       <div className={`w-3 h-3 rounded-full animate-pulse ${
-                        displayData.players > 0 ? 'bg-green-500' : 'bg-yellow-500'
+                        currentServer.isOnline ? 'bg-green-500' : 'bg-red-500'
                       }`} />
                       <span className={`text-sm ${
-                        displayData.players > 0 ? 'text-green-400' : 'text-yellow-400'
+                        currentServer.isOnline ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {displayData.players > 0 ? 'Online' : 'Waiting'}
+                        {currentServer.isOnline ? 'Online' : 'Offline'}
                       </span>
                     </div>
                   </div>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">{displayData.description}</p>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">{currentServer.description}</p>
                   <div className="flex flex-wrap gap-2 mb-6">
-                    {displayData.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="bg-secondary/20 text-secondary">
-                        {tag}
+                    <Badge variant="secondary" className="bg-secondary/20 text-secondary">
+                      {currentServer.gameType.toUpperCase()}
+                    </Badge>
+                    {currentServer.isPublic && (
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-400">
+                        Public
                       </Badge>
-                    ))}
+                    )}
                   </div>
                   <div className="flex gap-3">
                     <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -254,7 +274,7 @@ export function FeaturedServers() {
                       variant="outline" 
                       className="border-primary/20 text-primary hover:bg-primary/10"
                       onClick={async () => {
-                        const serverAddress = `${displayData.ip}:${displayData.port}`
+                        const serverAddress = `${currentServer.ip}:${currentServer.port}`
                         try {
                           await navigator.clipboard.writeText(serverAddress)
                           setShowCopyToast(true)
@@ -276,10 +296,10 @@ export function FeaturedServers() {
                       <span>Players</span>
                     </div>
                     <span className="font-semibold">
-                      <span className={displayData.players > 0 ? 'text-green-400' : 'text-muted-foreground'}>
-                        {isLoading ? '...' : displayData.players}
+                      <span className={currentServer.playerCount > 0 ? 'text-green-400' : 'text-muted-foreground'}>
+                        {isLoading ? '...' : currentServer.playerCount}
                       </span>
-                      <span className="text-muted-foreground">/{displayData.maxPlayers}</span>
+                      <span className="text-muted-foreground">/{currentServer.maxPlayers}</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
@@ -304,16 +324,18 @@ export function FeaturedServers() {
                   <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-5 h-5 text-primary" />
-                      <span>Location</span>
+                      <span>Server</span>
                     </div>
-                    <span className="font-semibold">{displayData.location}</span>
+                    <span className="font-semibold">{currentServer.ip}:{currentServer.port}</span>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Clock className="w-5 h-5 text-primary" />
-                      <span>Uptime</span>
+                      <span>Last Checked</span>
                     </div>
-                    <span className="font-semibold text-green-400">{displayData.uptime}</span>
+                    <span className="font-semibold text-green-400">
+                      {new Date(currentServer.lastChecked).toLocaleTimeString()}
+                    </span>
                   </div>
                 </div>
               </div>

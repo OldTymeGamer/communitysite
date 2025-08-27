@@ -1,56 +1,43 @@
-import { NextRequest, NextResponse } from "next/server"
-import { requireOwner } from "@/lib/auth"
-import { exec } from "child_process"
-import { promisify } from "util"
+import { NextResponse } from 'next/server'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const user = await requireOwner(request)
-    
-    // Only the owner can perform updates for security
-    const { updateType = "pull" } = await request.json()
-    
-    let command = ""
-    
-    switch (updateType) {
-      case "pull":
-        // Pull latest changes from git
-        command = "git pull origin main && npm install && npm run build"
-        break
-      case "reset":
-        // Reset to latest remote state (dangerous)
-        command = "git fetch origin && git reset --hard origin/main && npm install && npm run build"
-        break
-      default:
-        return NextResponse.json({ error: "Invalid update type" }, { status: 400 })
-    }
-    
-    // Execute the update command
-    const { stdout, stderr } = await execAsync(command, {
-      cwd: process.cwd(),
-      timeout: 300000 // 5 minutes timeout
-    })
-    
+    console.log('Starting website update...')
+
+    // Pull latest changes
+    console.log('Pulling latest changes from git...')
+    await execAsync('git pull origin main')
+
+    // Install dependencies
+    console.log('Installing dependencies...')
+    await execAsync('npm install')
+
+    // Build the application
+    console.log('Building application...')
+    await execAsync('npm run build')
+
+    console.log('Update completed successfully!')
+
+    // Schedule restart after response is sent
+    setTimeout(() => {
+      console.log('Restarting application...')
+      process.exit(0) // This will cause PM2 or similar process managers to restart the app
+    }, 2000)
+
     return NextResponse.json({
-      success: true,
-      message: "Website updated successfully",
-      output: stdout,
-      errors: stderr || null
+      message: 'Update completed successfully! The application will restart in a few seconds.'
     })
-    
+
   } catch (error) {
-    console.error("Error updating website:", error)
-    
-    if (error.message === "Authentication required" || error.message === "Owner access required") {
-      return NextResponse.json({ error: error.message }, { status: 401 })
-    }
-    
-    return NextResponse.json({ 
-      success: false,
-      error: "Failed to update website",
-      details: error.message 
+    console.error('Update failed:', error)
+    return NextResponse.json({
+      error: `Update failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     }, { status: 500 })
   }
 }
+
+export const dynamic = 'force-dynamic'

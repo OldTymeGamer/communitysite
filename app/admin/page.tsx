@@ -7,7 +7,9 @@ import { ServerManagementEnhanced } from "@/components/admin/server-management-e
 import { ContentModeration } from "@/components/admin/content-moderation"
 import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
 import { WebsiteSettings } from "@/components/admin/website-settings"
-import { Users, Server, Shield, BarChart3, Settings, Globe } from "lucide-react"
+import { WebsiteCustomization } from "@/components/admin/website-customization"
+import { UpdateManagement } from "@/components/admin/update-management"
+import { Users, Server, Shield, BarChart3, Settings, Globe, Download } from "lucide-react"
 
 export default function AdminDashboard() {
   return (
@@ -24,7 +26,7 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-charcoal-light/50 border border-amber-gold/20">
+          <TabsList className="grid w-full grid-cols-8 bg-charcoal-light/50 border border-amber-gold/20">
             <TabsTrigger
               value="analytics"
               className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
@@ -67,6 +69,20 @@ export default function AdminDashboard() {
               <Globe className="h-4 w-4" />
               Website
             </TabsTrigger>
+            <TabsTrigger
+              value="customization"
+              className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
+            >
+              <Settings className="h-4 w-4" />
+              Customize
+            </TabsTrigger>
+            <TabsTrigger
+              value="updates"
+              className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
+            >
+              <Download className="h-4 w-4" />
+              Updates
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics">
@@ -101,6 +117,14 @@ export default function AdminDashboard() {
 
           <TabsContent value="website">
             <WebsiteSettings />
+          </TabsContent>
+
+          <TabsContent value="customization">
+            <WebsiteCustomization />
+          </TabsContent>
+
+          <TabsContent value="updates">
+            <UpdateManagement />
           </TabsContent>
         </Tabs>
       </motion.div>

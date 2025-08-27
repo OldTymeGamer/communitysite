@@ -56,7 +56,7 @@ export function HeroSection() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch("/api/admin/website-settings")
+      const response = await fetch("/api/website-settings")
       if (response.ok) {
         const data = await response.json()
         setSettings(data)

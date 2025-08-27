@@ -30,8 +30,8 @@ export function ServerManagement() {
           cpu: 45,
           memory: 67,
           location: "US East",
-          ip: process.env.NEXT_PUBLIC_REDM_SERVER_IP || "173.208.177.138",
-          port: process.env.NEXT_PUBLIC_REDM_SERVER_PORT || "30126"
+          ip: "173.208.177.138",
+          port: "30126"
         }
       ])
     } finally {

@@ -9,7 +9,7 @@ export default function ServersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="font-western text-3xl md:text-5xl text-secondary mb-4">Server Browser</h1>
-            <p className="text-xl text-muted-foreground">Discover and join the best RedM servers in our community</p>
+            <p className="text-xl text-muted-foreground">Discover and join the best game servers in our community</p>
           </div>
           <ServerBrowser />
         </div>

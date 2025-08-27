@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# RedM/FiveM Community Website - Uninstall Script
+# Community Website - Uninstall Script
 # This script removes all installations of the community website
 
 set -e

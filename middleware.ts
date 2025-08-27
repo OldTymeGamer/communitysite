@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyToken } from './lib/auth'
+import jwt from 'jsonwebtoken'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -13,9 +13,13 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?redirect=/admin', request.url))
     }
 
-    const user = verifyToken(token)
-    if (!user || (!user.isAdmin && !user.isOwner)) {
-      return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
+    try {
+      const user = jwt.verify(token, process.env.JWT_SECRET!) as any
+      if (!user || (!user.isAdmin && !user.isOwner)) {
+        return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
+      }
+    } catch (error) {
+      return NextResponse.redirect(new URL('/login?error=invalid-token', request.url))
     }
   }
 
@@ -28,9 +32,13 @@ export function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const user = verifyToken(token)
-    if (!user || (!user.isAdmin && !user.isOwner)) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    try {
+      const user = jwt.verify(token, process.env.JWT_SECRET!) as any
+      if (!user || (!user.isAdmin && !user.isOwner)) {
+        return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+      }
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
   }
 

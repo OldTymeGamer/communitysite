@@ -1,101 +1,159 @@
-# 🎮 Community Website
+# 🎮 Community Website - Multi-Game Platform
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.1.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-5.9.2-green?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![Discord](https://img.shields.io/badge/Discord-Integration-7289da?style=for-the-badge&logo=discord)](https://discord.com/yEwUUnP5bK)
-
-A modern, feature-rich community website for RedM and FiveM servers. Built with Next.js 15, featuring Discord authentication, real-time server monitoring, and a customizable interface perfect for any gaming community.
-
-## 🚀 Quick Start
-
-Run this single command on your Linux server:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh | bash
-```
-
-
-The installation script will guide you through:
-- System package installation
-- Interactive configuration setup
-- SSL certificate setup (optional)
-- Database configuration
-- Discord integration setup
-- Production deployment with PM2 and Nginx
+A comprehensive, customizable community website platform supporting multiple games with a powerful admin panel for complete website management.
 
 ## ✨ Features
 
-### 🎮 Core Features
-- **Real-time Server Monitoring** - Live player counts and server status
-- **Discord Integration** - OAuth authentication and member sync
-- **Community Hub** - News feed, events calendar, and community discussions
-- **Server Browser** - Browse and connect to Game Servers
-- **User Profiles** - Customizable player profiles with achievements
-- **Admin Dashboard** - Comprehensive server and user management
+- **🎯 Multi-Game Support** - Perfect for FiveM, RedM, Minecraft, Rust, GMod, CS:GO, and more
+- **🛠️ Complete Admin Panel** - Manage everything through a beautiful web interface
+- **👥 User Management** - Registration, authentication, roles, and permissions
+- **🖥️ Server Management** - Add and monitor game servers with real-time status
+- **🎨 Full Customization** - Colors, images, text, and layout - all customizable
+- **🔄 Auto-Updates** - Update your website directly from the admin panel
+- **🔗 Integrations** - Discord, Steam, Google authentication (optional)
+- **📧 Email System** - SMTP configuration and user notifications
+- **📱 Responsive Design** - Beautiful on desktop, tablet, and mobile
 
-### 🎨 Design & UX
-- **Customizable Theme** - Beautiful interface with customizable styling
-- **Responsive Design** - Mobile-first approach with Tailwind CSS
-- **Smooth Animations** - Framer Motion powered transitions and effects
-- **Dark Mode** - Beautiful dark theme optimized for gaming communities
-- **Interactive Elements** - Hover effects, particle systems, and dynamic content
+## 🚀 One-Command Installation
 
-### 🔧 Technical Features
-- **Next.js 15** - Latest React framework with App Router
-- **TypeScript** - Full type safety and better developer experience
-- **MongoDB** - Scalable database with Mongoose ODM
-- **NextAuth.js** - Secure authentication with Discord provider
-- **Email System** - Nodemailer integration for notifications
-- **SEO Optimized** - Meta tags, structured data, and performance optimized
+### Prerequisites
 
-## 🛠️ Admin Features
+- **Linux Server** (Ubuntu, Debian, CentOS, RHEL, Fedora, Arch)
+- **Root Access** (sudo privileges)
+- **Domain Name** (optional, for SSL)
 
-### Website Management
-- **Dynamic Content** - Update hero section, gallery images, and site settings
-- **Server Management** - Add, edit, and monitor game servers from the admin panel
-- **User Management** - Comprehensive user administration and moderation tools
-- **Update System** - One-click website updates when new versions are available
+### Installation
 
-### Server Integration
-- **Automatic Server Display** - Servers added in admin panel automatically appear on the front page
-- **Real-time Monitoring** - Live ping rates, player counts, and server status
-- **Multi-Server Support** - Manage multiple RedM/FiveM servers from one dashboard
+**Run this single command on your Linux server:**
 
-## 🔒 Security Features
+```bash
+curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh | sudo bash
+```
 
-- **HTTPS Enforcement** - SSL/TLS with Let's Encrypt
-- **Rate Limiting** - API endpoint protection
-- **CSRF Protection** - Built-in Next.js security
-- **Input Validation** - Server-side validation for all inputs
-- **Secure Headers** - Security headers via Nginx
-- **Environment Isolation** - Secure environment variable handling
+That's it! The script will:
+- ✅ Install Node.js, Nginx, and all dependencies
+- ✅ Guide you through configuration (Discord, MongoDB, Email, SSL)
+- ✅ Set up SSL certificates with Let's Encrypt
+- ✅ Configure firewall and security
+- ✅ Start all services automatically
+- ✅ Provide you with a fully working website
 
-## 📊 System Requirements
+### After Installation
 
-**Minimum Requirements:**
-- **OS**: Ubuntu 20.04+, Debian 11+, CentOS 8+, or similar
-- **RAM**: 1GB (2GB+ recommended)
-- **Storage**: 5GB free space
-- **Network**: Ports 80 (HTTP) and 443 (HTTPS) accessible
+1. **Access your website** at your domain (or server IP)
+2. **Complete setup** at `/setup` to create your admin account
+3. **Access admin panel** at `/admin` to customize everything
+4. **Start building your community!**
 
-**Supported Linux Distributions:**
-- Ubuntu 20.04+ / Debian 11+
-- CentOS 8+ / RHEL 8+ / Rocky Linux / AlmaLinux
-- Fedora
-- Arch Linux
+## 🎨 Customization
 
-## 🤝 Community
+Once running, access the admin panel at `/admin` to customize:
 
-- **Discord Server**: [Join our community](https://discord.gg/yEwUUnP5bK)
-- **Support**: Create an issue or contact administrators
+### Website Appearance
+- **Colors & Branding** - Complete color scheme customization
+- **Hero Section** - Title, description, and background images
+- **Gallery Images** - Upload and manage slideshow images
+- **Content Management** - All text and content editable
+
+### Server Management
+- **Add Game Servers** - Support for multiple game types
+- **Real-time Monitoring** - Player count, ping, and status
+- **Automatic Display** - Servers appear on homepage automatically
+
+### User & Community
+- **User Registration** - Enable/disable public registration
+- **Email Verification** - Optional email verification system
+- **Role Management** - Admin and user permissions
+
+### Integrations
+- **Discord Integration** - OAuth login and member count display
+- **Steam Integration** - Steam authentication (coming soon)
+- **Google Integration** - Google OAuth (coming soon)
+- **Email Settings** - SMTP configuration for notifications
+
+## 🔄 Auto-Updates
+
+Keep your website up-to-date effortlessly:
+
+1. Go to **Admin Panel** → **Updates**
+2. Click "Check for Updates"
+3. If updates are available, click "Update Now"
+4. The website automatically pulls changes and restarts
+
+## 🔧 Manual Development Setup
+
+If you want to develop or run locally:
+
+```bash
+git clone https://github.com/OldTymeGamer/communitysite.git
+cd communitysite
+npm install
+cp .env.example .env.local
+# Edit .env.local with your settings
+npm run dev
+```
+
+## 📁 Project Structure
+
+```
+communitysite/
+├── app/                    # Next.js app directory
+│   ├── admin/             # Admin panel pages
+│   ├── api/               # API routes
+│   └── ...                # Public pages
+├── components/            # React components
+│   ├── admin/            # Admin-specific components
+│   └── ui/               # Reusable UI components
+├── lib/                  # Utilities and configurations
+│   ├── models/           # Database models
+│   └── ...               # Auth, database, etc.
+└── public/               # Static assets
+```
+
+## 🛠️ Development
+
+```bash
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📞 Support
+
+Need help? Here's how to get support:
+
+1. **Check the admin panel logs** for error messages
+2. **Verify your `.env.local`** configuration
+3. **Create an issue** on GitHub with:
+   - Your setup details
+   - Error messages
+   - Steps to reproduce
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-<div align="center">
-  <strong>Built with ❤️ for the gaming community</strong>
-</div>
+**Build amazing gaming communities! 🎮✨**
+
+*Made with ❤️ for the gaming community*

@@ -1,49 +1,72 @@
-import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/auth"
+import { NextResponse } from 'next/server'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 
-export async function GET(request: NextRequest) {
+const execAsync = promisify(exec)
+
+export async function GET() {
   try {
-    const user = await requireAdmin(request)
-    
-    // Check for updates from GitHub
-    const response = await fetch('https://api.github.com/repos/your-username/community-website/releases/latest', {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'Community-Website'
-      }
-    })
-    
-    if (!response.ok) {
-      return NextResponse.json({ 
-        updateAvailable: false,
-        error: "Unable to check for updates" 
+    // Check if git is available and we're in a git repository
+    try {
+      await execAsync('git status')
+    } catch (error) {
+      return NextResponse.json({
+        error: "Git repository not found. Make sure this is a git repository with a remote origin configured."
       })
     }
-    
-    const latestRelease = await response.json()
-    
-    // Get current version from package.json
-    const packageJson = require('../../../../package.json')
-    const currentVersion = packageJson.version
-    
-    const updateAvailable = latestRelease.tag_name !== `v${currentVersion}`
-    
-    return NextResponse.json({
-      updateAvailable,
-      currentVersion,
-      latestVersion: latestRelease.tag_name,
-      releaseNotes: latestRelease.body,
-      releaseUrl: latestRelease.html_url,
-      publishedAt: latestRelease.published_at
-    })
-  } catch (error) {
-    console.error("Error checking for updates:", error)
-    if (error.message === "Authentication required" || error.message === "Admin access required") {
-      return NextResponse.json({ error: error.message }, { status: 401 })
+
+    // Fetch latest changes from remote
+    await execAsync('git fetch origin')
+
+    // Get current commit hash
+    const { stdout: currentHash } = await execAsync('git rev-parse HEAD')
+    const currentCommit = currentHash.trim()
+
+    // Get remote commit hash
+    const { stdout: remoteHash } = await execAsync('git rev-parse origin/main')
+    const remoteCommit = remoteHash.trim()
+
+    // Check if we're behind
+    const { stdout: behindCount } = await execAsync('git rev-list --count HEAD..origin/main')
+    const commitsAhead = parseInt(behindCount.trim())
+
+    const hasUpdate = commitsAhead > 0
+
+    let latestCommit = null
+    let changelog: string[] = []
+
+    if (hasUpdate) {
+      // Get latest commit info
+      const { stdout: commitInfo } = await execAsync('git log origin/main -1 --pretty=format:"%H|%s|%an|%ad" --date=short')
+      const [hash, message, author, date] = commitInfo.split('|')
+      
+      latestCommit = {
+        hash: hash.substring(0, 8),
+        message,
+        author,
+        date
+      }
+
+      // Get changelog (recent commits)
+      const { stdout: changelogOutput } = await execAsync('git log origin/main --oneline -10')
+      changelog = changelogOutput.trim().split('\n').map(line => line.substring(8)) // Remove hash prefix
     }
-    return NextResponse.json({ 
-      updateAvailable: false,
-      error: "Failed to check for updates" 
-    }, { status: 500 })
+
+    return NextResponse.json({
+      currentVersion: currentCommit.substring(0, 8),
+      latestVersion: remoteCommit.substring(0, 8),
+      hasUpdate,
+      commitsAhead,
+      latestCommit,
+      changelog
+    })
+
+  } catch (error) {
+    console.error('Update check failed:', error)
+    return NextResponse.json({
+      error: `Failed to check for updates: ${error instanceof Error ? error.message : 'Unknown error'}`
+    })
   }
 }
+
+export const dynamic = 'force-dynamic'

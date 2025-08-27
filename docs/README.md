@@ -1,41 +1,50 @@
-# 📚 RedM/FiveM Community Website Documentation
+# 📚 Community Website Documentation
 
-Welcome to the RedM/FiveM Community Website documentation hub. Here you'll find comprehensive guides for setup, deployment, and maintenance of your gaming community website.
+Welcome to the Community Website documentation. This website features one-command installation and a powerful admin panel for complete customization.
 
-## 📖 Documentation Index
+## 🚀 Quick Start
 
-### 🚀 Getting Started
-- [Main README](../README.md) - Project overview and quick start guide
-- [Environment Setup](./ENVIRONMENT.md) - Detailed environment configuration
-- [Development Guide](./DEVELOPMENT.md) - Local development setup and guidelines
+### Installation
+Run this single command on your Linux server:
+```bash
+curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/install.sh | sudo bash
+```
 
-### 🏗️ Deployment & Operations
-- [**Deployment Guide**](./DEPLOYMENT.md) - Complete production deployment with Nginx
-- [Server Configuration](./SERVER.md) - Server setup and optimization
-- [SSL & Security](./SECURITY.md) - Security best practices and SSL setup
-- [Monitoring & Maintenance](./MONITORING.md) - System monitoring and maintenance
+The installation script will:
+- Install all dependencies automatically
+- Guide you through configuration
+- Set up SSL certificates
+- Configure security and firewall
+- Start all services
 
-### 🔧 Configuration
-- [Discord Integration](./DISCORD.md) - Discord bot and OAuth setup
-- [Database Setup](./DATABASE.md) - MongoDB configuration and management
-- [Email Configuration](./EMAIL.md) - SMTP setup for notifications
-- [Game Server Integration](./GAMESERVER.md) - RedM/FiveM server integration guide
+### After Installation
+1. Visit your domain (or server IP)
+2. Complete setup at `/setup`
+3. Access admin panel at `/admin`
+4. Customize everything through the web interface
 
-### 🎨 Customization
-- [Theming Guide](./THEMING.md) - Customizing the Wild West theme
-- [Component Library](./COMPONENTS.md) - Available UI components
-- [API Reference](./API.md) - API endpoints and usage
+## 🛠️ Admin Panel Features
 
-### 🛠️ Administration
-- [Admin Dashboard](./ADMIN.md) - Using the admin interface
-- [User Management](./USERS.md) - Managing community members
-- [Content Management](./CONTENT.md) - Managing news, events, and content
-- [Moderation Tools](./MODERATION.md) - Community moderation features
+### Website Customization
+- **Colors & Branding** - Complete color scheme customization
+- **Hero Section** - Title, description, and background images
+- **Gallery Images** - Upload and manage slideshow images
+- **Content Management** - All text and content editable
 
-### 🔍 Troubleshooting
-- [Common Issues](./TROUBLESHOOTING.md) - Solutions to common problems
-- [FAQ](./FAQ.md) - Frequently asked questions
-- [Performance Optimization](./PERFORMANCE.md) - Optimizing site performance
+### Server Management
+- **Add Game Servers** - Support for multiple game types (FiveM, RedM, Minecraft, etc.)
+- **Real-time Monitoring** - Player count, ping, and status
+- **Automatic Display** - Servers appear on homepage automatically
+
+### User & Community Management
+- **User Registration** - Enable/disable public registration
+- **Email Verification** - Optional email verification system
+- **Role Management** - Admin and user permissions
+
+### Integrations & Settings
+- **Discord Integration** - OAuth login and member count display
+- **Email Settings** - SMTP configuration for notifications
+- **Auto-Updates** - Update your website directly from admin panel
 
 ## 🆘 Getting Help
 

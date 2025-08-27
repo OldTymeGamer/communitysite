@@ -1,49 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { connectDB } from '@/lib/db'
+import { WebsiteSettings } from '@/lib/models/WebsiteSettings'
 import nodemailer from 'nodemailer'
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Create transporter with current settings
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: parseInt(process.env.SMTP_PORT || '587') === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    })
-
-    // Test the connection
-    await transporter.verify()
-
-    return NextResponse.json({
-      success: true,
-      message: 'SMTP connection successful!',
-      config: {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        user: process.env.SMTP_USER,
-        from: process.env.SMTP_FROM
-      }
-    })
-
-  } catch (error: any) {
-    console.error('SMTP Test Error:', error)
+    await connectDB()
     
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      code: error.code,
-      config: {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        user: process.env.SMTP_USER,
-        from: process.env.SMTP_FROM
+    const { to, subject, text } = await request.json()
+    
+    // Get email settings from database
+    const settings = await WebsiteSettings.findOne()
+    if (!settings?.emailSettings?.smtpHost) {
+      return NextResponse.json({ error: 'Email settings not configured' }, { status: 400 })
+    }
+
+    const { emailSettings } = settings
+
+    // Create transporter
+    const transporter = nodemailer.createTransporter({
+      host: emailSettings.smtpHost,
+      port: emailSettings.smtpPort,
+      secure: emailSettings.smtpPort === 465,
+      auth: {
+        user: emailSettings.smtpUser,
+        pass: emailSettings.smtpPassword
       }
+    })
+
+    // Send test email
+    await transporter.sendMail({
+      from: `"${emailSettings.fromName}" <${emailSettings.fromEmail}>`,
+      to,
+      subject,
+      text
+    })
+
+    return NextResponse.json({ message: 'Test email sent successfully' })
+
+  } catch (error) {
+    console.error('Email test failed:', error)
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Failed to send test email' 
     }, { status: 500 })
   }
 }
+
+export const dynamic = 'force-dynamic'

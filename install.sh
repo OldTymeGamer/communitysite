@@ -153,7 +153,7 @@ install_system_packages() {
             apt install -y nodejs
             
             # Install other packages
-            apt install -y nginx git ufw certbot python3-certbot-nginx build-essential dnsutils openssl
+            apt install -y nginx git ufw certbot python3-certbot-nginx build-essential dnsutils openssl unzip
             ;;
             
         redhat)
@@ -173,13 +173,13 @@ install_system_packages() {
             $PKG_MANAGER install -y nodejs
             
             # Install other packages
-            $PKG_MANAGER install -y nginx git firewalld certbot python3-certbot-nginx gcc-c++ make bind-utils openssl
+            $PKG_MANAGER install -y nginx git firewalld certbot python3-certbot-nginx gcc-c++ make bind-utils openssl unzip
             ;;
             
         arch)
             print_info "Installing packages for Arch Linux..."
             pacman -Syu --noconfirm
-            pacman -S --noconfirm nodejs npm nginx git ufw certbot certbot-nginx base-devel bind openssl
+            pacman -S --noconfirm nodejs npm nginx git ufw certbot certbot-nginx base-devel bind openssl unzip
             ;;
             
         *)
@@ -335,16 +335,16 @@ display_config_summary() {
     echo "  14. Admin Role IDs: ${DISCORD_ADMIN_ROLE_IDS:-'Not set'}"
     
     echo ""
-    print_info "🎯 Game Servers:"
-    echo "  15. Server Management: Available in Admin Panel"
+    print_info "📧 Email (SMTP):"
+    echo "  15. SMTP Host: ${SMTP_HOST:-'Not set'}"
+    echo "  16. SMTP Port: ${SMTP_PORT:-'Not set'}"
+    echo "  17. SMTP User: ${SMTP_USER:-'Not set'}"
+    echo "  18. SMTP Password: ${SMTP_PASS:0:5}... (hidden)"
+    echo "  19. From Email: ${SMTP_FROM:-'Not set'}"
     
     echo ""
-    print_info "📧 Email (SMTP):"
-    echo "  18. SMTP Host: ${SMTP_HOST:-'Not set'}"
-    echo "  19. SMTP Port: ${SMTP_PORT:-'Not set'}"
-    echo "  20. SMTP User: ${SMTP_USER:-'Not set'}"
-    echo "  21. SMTP Password: ${SMTP_PASS:0:5}... (hidden)"
-    echo "  22. From Email: ${SMTP_FROM:-'Not set'}"
+    print_info "🎯 Game Servers:"
+    echo "  • Server Management: Available in Admin Panel after installation"
     
     echo ""
 }
@@ -392,14 +392,13 @@ modify_configuration() {
             12) prompt_input "Discord Bot Token" "$DISCORD_BOT_TOKEN" "DISCORD_BOT_TOKEN" ;;
             13) prompt_input "Discord Guild ID" "$DISCORD_GUILD_ID" "DISCORD_GUILD_ID" ;;
             14) prompt_input "Discord Admin Role IDs" "$DISCORD_ADMIN_ROLE_IDS" "DISCORD_ADMIN_ROLE_IDS" ;;
-            15) print_info "Game servers are managed through the Admin Panel after installation" ;;
-            16) prompt_input "SMTP Host" "$SMTP_HOST" "SMTP_HOST" ;;
-            17) prompt_input "SMTP Port" "$SMTP_PORT" "SMTP_PORT" ;;
-            18) prompt_input "SMTP User" "$SMTP_USER" "SMTP_USER" ;;
-            19) prompt_input "SMTP Password" "$SMTP_PASS" "SMTP_PASS" ;;
-            20) prompt_input "From Email" "$SMTP_FROM" "SMTP_FROM" ;;
+            15) prompt_input "SMTP Host" "$SMTP_HOST" "SMTP_HOST" ;;
+            16) prompt_input "SMTP Port" "$SMTP_PORT" "SMTP_PORT" ;;
+            17) prompt_input "SMTP User" "$SMTP_USER" "SMTP_USER" ;;
+            18) prompt_input "SMTP Password" "$SMTP_PASS" "SMTP_PASS" ;;
+            19) prompt_input "From Email" "$SMTP_FROM" "SMTP_FROM" ;;
             done|DONE) break ;;
-            *) print_error "Invalid choice. Enter 1-20 or 'done'" ;;
+            *) print_error "Invalid choice. Enter 1-19 or 'done'" ;;
         esac
         
         echo ""
@@ -504,8 +503,40 @@ deploy_application() {
     fi
     sudo -u www-data bash -c "export PATH=\"/var/www/.npm-global/bin:\$PATH\" && pm2 stop $APP_NAME" 2>/dev/null || true
     
-    # Copy application files
-    cp -r ./* "$APP_DIR/"
+    # Create app directory
+    mkdir -p "$APP_DIR"
+    
+    # Clone or download the project
+    print_info "Downloading latest project files from GitHub..."
+    if command -v git >/dev/null 2>&1; then
+        # Use git clone if available
+        if [ -d "$APP_DIR/.git" ]; then
+            print_info "Updating existing git repository..."
+            cd "$APP_DIR"
+            git fetch origin
+            git reset --hard origin/main
+        else
+            print_info "Cloning repository..."
+            rm -rf "$APP_DIR"
+            git clone https://github.com/OldTymeGamer/communitysite.git "$APP_DIR"
+        fi
+    else
+        # Fallback to wget/curl
+        print_info "Downloading project archive..."
+        cd /tmp
+        if command -v wget >/dev/null 2>&1; then
+            wget -O communitysite.zip https://github.com/OldTymeGamer/communitysite/archive/refs/heads/main.zip
+        else
+            curl -L -o communitysite.zip https://github.com/OldTymeGamer/communitysite/archive/refs/heads/main.zip
+        fi
+        
+        # Extract and move files
+        unzip -q communitysite.zip
+        rm -rf "$APP_DIR"
+        mv communitysite-main "$APP_DIR"
+        rm communitysite.zip
+    fi
+    
     chown -R www-data:www-data "$APP_DIR"
     
     # Install dependencies
@@ -553,14 +584,7 @@ DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN
 DISCORD_GUILD_ID=$DISCORD_GUILD_ID
 DISCORD_ADMIN_ROLE_IDS=$DISCORD_ADMIN_ROLE_IDS
 
-# Game Server Configuration (RedM/FiveM)
-SERVER_API_KEY=$SERVER_API_KEY
-GAME_SERVER_IP=$GAME_SERVER_IP
-GAME_SERVER_PORT=$GAME_SERVER_PORT
-
-# Public environment variables (accessible in browser)
-NEXT_PUBLIC_GAME_SERVER_IP=$GAME_SERVER_IP
-NEXT_PUBLIC_GAME_SERVER_PORT=$GAME_SERVER_PORT
+# Game Server Configuration is now managed through the Admin Panel
 
 # Email Configuration (for verification and password reset)
 SMTP_HOST=$SMTP_HOST
@@ -1357,12 +1381,7 @@ main() {
         exit 1
     fi
     
-    # Check if we're in the right directory
-    if [ ! -f "package.json" ]; then
-        print_error "Please run this script from the project root directory"
-        print_info "Make sure you're in the directory containing package.json"
-        exit 1
-    fi
+    # This script can be run from anywhere - it will clone/download the project
     
     # Check for existing installations
     handle_existing_installations
