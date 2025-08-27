@@ -92,7 +92,7 @@ export function Navigation() {
                     </Link>
                   </Button>
                 </motion.div>
-                {session.user?.discordId && (
+                {(user.isAdmin || user.isOwner) && (
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
                       variant="ghost"
@@ -112,7 +112,7 @@ export function Navigation() {
                     variant="ghost"
                     size="sm"
                     className="text-sage-green hover:text-amber-gold hover:bg-amber-gold/10 transition-all duration-300"
-                    onClick={() => signOut()}
+                    onClick={() => logout()}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
@@ -194,9 +194,9 @@ export function Navigation() {
                 className="pt-4 pb-3 border-t border-amber-gold/20"
               >
                 <div className="flex items-center px-3 space-y-2 flex-col">
-                  {session ? (
+                  {user ? (
                     <>
-                      {session.user?.discordId && (
+                      {(user.isAdmin || user.isOwner) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -214,7 +214,7 @@ export function Navigation() {
                         size="sm"
                         className="w-full text-sage-green hover:text-amber-gold hover:bg-amber-gold/10"
                         onClick={() => {
-                          signOut()
+                          logout()
                           setIsOpen(false)
                         }}
                       >
@@ -226,13 +226,13 @@ export function Navigation() {
                     <Button
                       size="sm"
                       className="w-full bg-gradient-to-r from-amber-gold to-amber-gold/80 hover:from-amber-gold/90 hover:to-amber-gold/70 text-charcoal font-semibold"
-                      onClick={() => {
-                        signIn("discord")
-                        setIsOpen(false)
-                      }}
+                      asChild
+                      onClick={() => setIsOpen(false)}
                     >
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Connect Discord
+                      <Link href="/login" onClick={() => setIsOpen(false)}>
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign In
+                      </Link>
                     </Button>
                   )}
                 </div>

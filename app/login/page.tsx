@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { signIn, getSession } from "next-auth/react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, User, Lock } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/components/session-provider"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -21,6 +22,14 @@ export default function LoginPage() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const { user, login } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (user) {
+      router.push('/')
+    }
+  }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,17 +37,24 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const result = await signIn('credentials', {
-        username: formData.username,
-        password: formData.password,
-        redirect: false,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
       })
 
-      if (result?.error) {
-        setError('Invalid credentials')
-      } else if (result?.ok) {
-        // Redirect to home page or dashboard
-        window.location.href = "/"
+      const data = await response.json()
+
+      if (response.ok) {
+        login(data.token, data.user)
+        router.push('/')
+      } else {
+        setError(data.error || 'Login failed')
       }
     } catch (error) {
       setError('Login failed')

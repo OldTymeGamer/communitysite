@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/auth"
 import { exec } from "child_process"
 import { promisify } from "util"
 
 const execAsync = promisify(exec)
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.isAdmin) {
+    const user = await getAuthUser(request)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

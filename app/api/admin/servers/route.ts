@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { connectDB } from "@/lib/db"
+import { getAuthUser } from "@/lib/auth"
+import dbConnect from "@/lib/db"
 import { GameServer } from "@/lib/models/GameServer"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.isAdmin) {
+    const user = await getAuthUser(request)
+    if (!user || (!user.isAdmin && !user.isOwner)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    await connectDB()
+    await dbConnect()
     const servers = await GameServer.find().sort({ createdAt: -1 })
     
     // Update server status for each server
@@ -34,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json()
-    await connectDB()
+    await dbConnect()
 
     const server = await GameServer.create(data)
     await updateServerStatus(server)

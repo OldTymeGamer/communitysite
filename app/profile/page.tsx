@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession, signIn } from "next-auth/react"
+import { useAuth } from "@/components/session-provider"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,14 +14,14 @@ import { User, Mail, Calendar, Link as LinkIcon, Check, X, Camera, Trash2 } from
 import Link from "next/link"
 
 export default function ProfilePage() {
-  const { data: session, status, update } = useSession()
+  const { user, loading } = useAuth()
   const [isConnecting, setIsConnecting] = useState(false)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [profilePictureUrl, setProfilePictureUrl] = useState("")
   const [isUpdatingPicture, setIsUpdatingPicture] = useState(false)
   const [pictureError, setPictureError] = useState("")
 
-  if (status === "loading") {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal flex items-center justify-center">
         <div className="text-sage-green">Loading...</div>
@@ -29,7 +29,7 @@ export default function ProfilePage() {
     )
   }
 
-  if (status === "unauthenticated") {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal flex items-center justify-center p-4">
         <Card className="bg-charcoal-light/80 backdrop-blur-sm border-amber-gold/20 max-w-md w-full">
