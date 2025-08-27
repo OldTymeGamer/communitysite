@@ -4,7 +4,7 @@ A comprehensive, customizable community website platform supporting multiple gam
 
 ## ✨ Features
 
-- **🎯 Multi-Game Support** - Perfect for FiveM, RedM, Minecraft, Rust, GMod, CS:GO, and more
+- **🎯 Multi-Game Support** - Perfect for any game community - Minecraft, Rust, GMod, CS:GO, and more
 - **🛠️ Complete Admin Panel** - Manage everything through a beautiful web interface
 - **👥 User Management** - Registration, authentication, roles, and permissions
 - **🖥️ Server Management** - Add and monitor game servers with real-time status
@@ -32,22 +32,23 @@ curl -fsSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/ins
 
 That's it! The script will:
 - ✅ Install Node.js, Nginx, and all dependencies
-- ✅ Guide you through configuration (Discord, MongoDB, Email, SSL)
+- ✅ Guide you through basic configuration (MongoDB, SSL)
 - ✅ Set up SSL certificates with Let's Encrypt
 - ✅ Configure firewall and security
 - ✅ Start all services automatically
-- ✅ Provide you with a fully working website
+- ✅ Give you the exact URL/IP to visit your new website
 
 ### After Installation
 
-1. **Access your website** at your domain (or server IP)
-2. **Complete setup** at `/setup` to create your admin account
-3. **Access admin panel** at `/admin` to customize everything
-4. **Start building your community!**
+1. **Visit your website** - The installer will show you the exact URL/IP address
+2. **Automatic setup** - You'll be redirected to setup automatically on first visit
+3. **Create admin account** - Fill out the setup form to become the site owner
+4. **Use "Admin" button** - Access admin panel via the navigation button (not `/admin` URL)
+5. **Start building your community!**
 
 ## 🎨 Customization
 
-Once running, access the admin panel at `/admin` to customize:
+Once running, use the **Admin button** in your website's navigation to customize:
 
 ### Website Appearance
 - **Colors & Branding** - Complete color scheme customization
@@ -71,6 +72,7 @@ Once running, access the admin panel at `/admin` to customize:
 - **Google Integration** - Google OAuth (coming soon)
 - **Email Settings** - SMTP configuration for notifications
 
+
 ## 🔄 Auto-Updates
 
 Keep your website up-to-date effortlessly:
@@ -80,73 +82,16 @@ Keep your website up-to-date effortlessly:
 3. If updates are available, click "Update Now"
 4. The website automatically pulls changes and restarts
 
-## 🔧 Manual Development Setup
-
-If you want to develop or run locally:
-
-```bash
-git clone https://github.com/OldTymeGamer/communitysite.git
-cd communitysite
-npm install
-cp .env.example .env.local
-# Edit .env.local with your settings
-npm run dev
-```
-
-## 📁 Project Structure
-
-```
-communitysite/
-├── app/                    # Next.js app directory
-│   ├── admin/             # Admin panel pages
-│   ├── api/               # API routes
-│   └── ...                # Public pages
-├── components/            # React components
-│   ├── admin/            # Admin-specific components
-│   └── ui/               # Reusable UI components
-├── lib/                  # Utilities and configurations
-│   ├── models/           # Database models
-│   └── ...               # Auth, database, etc.
-└── public/               # Static assets
-```
-
-## 🛠️ Development
-
-```bash
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
 
 ## 📞 Support
 
 Need help? Here's how to get support:
 
 1. **Check the admin panel logs** for error messages
-2. **Verify your `.env.local`** configuration
-3. **Create an issue** on GitHub with:
-   - Your setup details
-   - Error messages
-   - Steps to reproduce
+2. **Contact us** via GitHub issues or our Discord server
+3. **Read documentation** in the wiki section of this repository
+4. **Join our Discord server** for live chat and support
+
 
 ## 📄 License
 

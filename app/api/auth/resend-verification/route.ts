@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     await user.save()
 
     // Send verification email
-    const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+    const verificationUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
     const emailContent = generateVerificationEmail(user.username, verificationUrl)
     
     const emailResult = await sendEmail({

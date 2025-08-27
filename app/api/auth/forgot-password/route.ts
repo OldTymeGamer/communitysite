@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     await user.save()
 
     // Send password reset email
-    const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
+    const resetUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
     const emailContent = generatePasswordResetEmail(user.username, resetUrl)
     
     const emailResult = await sendEmail({

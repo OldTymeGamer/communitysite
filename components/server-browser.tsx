@@ -15,7 +15,7 @@ interface Server {
   description: string
   ip: string
   port: number
-  gameType: "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
+  gameType: "roleplay" | "survival" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
   isPublic: boolean
   isOnline: boolean
   playerCount: number
@@ -113,8 +113,8 @@ export function ServerBrowser() {
             </SelectTrigger>
             <SelectContent className="bg-charcoal-light border-amber-gold/20">
               <SelectItem value="all" className="text-sage-green">All Types</SelectItem>
-              <SelectItem value="redm" className="text-sage-green">RedM</SelectItem>
-              <SelectItem value="fivem" className="text-sage-green">FiveM</SelectItem>
+              <SelectItem value="roleplay" className="text-sage-green">Roleplay</SelectItem>
+              <SelectItem value="survival" className="text-sage-green">Survival</SelectItem>
             </SelectContent>
           </Select>
         </div>

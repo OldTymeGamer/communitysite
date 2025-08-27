@@ -80,7 +80,7 @@ interface GameServer {
 }
 
 const gameTypes = [
-  "fivem", "redm", "minecraft", "rust", "gmod", "csgo", "cs2", 
+  "roleplay", "survival", "minecraft", "rust", "gmod", "csgo", "cs2", 
   "valorant", "apex", "cod", "battlefield", "ark", "7dtd", 
   "terraria", "satisfactory", "valheim", "palworld", "other"
 ]

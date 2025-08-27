@@ -350,16 +350,10 @@ else
     exit 1
 fi
 
-# Step 6: Update environment file
-print_header "Step 5: Updating Environment Configuration"
-if [ -f "/var/www/losttrailrp/.env.local" ]; then
-    print_info "Updating NEXTAUTH_URL to use HTTPS..."
-    sed -i 's|NEXTAUTH_URL=http://|NEXTAUTH_URL=https://|g' /var/www/losttrailrp/.env.local
-    print_status "Environment updated"
-else
-    print_warning "Environment file not found at /var/www/losttrailrp/.env.local"
-    print_info "Please manually update NEXTAUTH_URL to use https://"
-fi
+# Step 6: Environment configuration
+print_header "Step 5: Environment Configuration"
+print_info "Authentication configuration is handled through the admin panel"
+print_status "No environment updates needed"
 
 # Step 7: Setup auto-renewal
 print_header "Step 6: Setting up Auto-renewal"

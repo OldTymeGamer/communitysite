@@ -251,15 +251,12 @@ collect_all_config() {
         print_info "Checking DNS configuration for $DOMAIN..."
         validate_dns_with_retry
         
-        # Set NEXTAUTH_URL based on SSL
-        NEXTAUTH_URL="https://$DOMAIN"
+        # SSL will be configured for domain
+        echo "SSL will be configured for: $DOMAIN"
     else
         SETUP_SSL=false
-        NEXTAUTH_URL="http://localhost:$APP_PORT"
+        echo "Running in HTTP mode on port: $APP_PORT"
     fi
-    
-    # Generate NextAuth secret
-    NEXTAUTH_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
     
     # Database Configuration
     echo ""
@@ -270,31 +267,9 @@ collect_all_config() {
     print_info "  Atlas: mongodb+srv://username:password@cluster.mongodb.net/community"
     prompt_input "MongoDB URI" "mongodb://localhost:27017/community" "MONGODB_URI"
     
-    # Discord Configuration
+    # All other configurations (Discord, Email, Game Servers) are handled through the admin panel
     echo ""
-    print_step "Discord OAuth & Bot Configuration"
-    print_info "You'll need to create a Discord application at: https://discord.com/developers/applications"
-    echo ""
-    prompt_input "Discord Client ID" "" "DISCORD_CLIENT_ID"
-    prompt_input "Discord Client Secret" "" "DISCORD_CLIENT_SECRET"
-    prompt_input "Discord Bot Token" "" "DISCORD_BOT_TOKEN"
-    prompt_input "Discord Guild ID (your server ID)" "" "DISCORD_GUILD_ID"
-    prompt_input "Discord Admin Role IDs (comma-separated)" "" "DISCORD_ADMIN_ROLE_IDS"
-    
-    # Game Server Configuration - Managed through admin panel
-    # No longer configured during installation
-    
-    # Email Configuration
-    echo ""
-    print_step "Email Configuration (SMTP)"
-    print_info "For Gmail: Use smtp.gmail.com with an App Password (not your regular password)"
-    print_info "Other providers: SendGrid, Mailgun, Outlook, etc."
-    echo ""
-    prompt_input "SMTP Host" "smtp.gmail.com" "SMTP_HOST"
-    prompt_input "SMTP Port" "587" "SMTP_PORT"
-    prompt_input "SMTP Username/Email" "" "SMTP_USER"
-    prompt_input "SMTP Password (App Password for Gmail)" "" "SMTP_PASS"
-    prompt_input "From Email Address" "" "SMTP_FROM"
+    print_info "✨ Additional configurations (Discord, Email, Game Servers) will be available in the admin panel after installation."
 }
 
 # Function to display configuration summary
@@ -307,40 +282,26 @@ display_config_summary() {
     echo "  1. App Name: $APP_NAME"
     echo "  2. App Port: $APP_PORT"
     echo "  3. App Directory: $APP_DIR"
-    echo "  4. NextAuth URL: $NEXTAUTH_URL"
-    echo "  5. NextAuth Secret: ${NEXTAUTH_SECRET:0:20}... (generated)"
     
     echo ""
     print_info "🌐 SSL & Domain:"
     if [ "$SETUP_SSL" = true ]; then
-        echo "  6. SSL: Enabled"
-        echo "  7. Domain: $DOMAIN"
-        echo "  8. Admin Email: $ADMIN_EMAIL"
+        echo "  4. SSL: Enabled"
+        echo "  5. Domain: $DOMAIN"
+        echo "  6. Admin Email: $ADMIN_EMAIL"
     else
-        echo "  6. SSL: Disabled"
-        echo "  7. Domain: Not configured"
-        echo "  8. Admin Email: Not configured"
+        echo "  4. SSL: Disabled"
+        echo "  5. Domain: Not configured"
+        echo "  6. Admin Email: Not configured"
     fi
     
     echo ""
     print_info "🗄️ Database:"
-    echo "  9. MongoDB URI: $MONGODB_URI"
+    echo "  7. MongoDB URI: $MONGODB_URI"
     
     echo ""
-    print_info "🎮 Discord Configuration:"
-    echo "  10. Client ID: ${DISCORD_CLIENT_ID:-'Not set'}"
-    echo "  11. Client Secret: ${DISCORD_CLIENT_SECRET:0:10}... (hidden)"
-    echo "  12. Bot Token: ${DISCORD_BOT_TOKEN:0:10}... (hidden)"
-    echo "  13. Guild ID: ${DISCORD_GUILD_ID:-'Not set'}"
-    echo "  14. Admin Role IDs: ${DISCORD_ADMIN_ROLE_IDS:-'Not set'}"
-    
-    echo ""
-    print_info "📧 Email (SMTP):"
-    echo "  15. SMTP Host: ${SMTP_HOST:-'Not set'}"
-    echo "  16. SMTP Port: ${SMTP_PORT:-'Not set'}"
-    echo "  17. SMTP User: ${SMTP_USER:-'Not set'}"
-    echo "  18. SMTP Password: ${SMTP_PASS:0:5}... (hidden)"
-    echo "  19. From Email: ${SMTP_FROM:-'Not set'}"
+    print_info "📧 Email (SMTP) - Optional:"
+    echo "  8. Configure email settings in admin panel after installation"
     
     echo ""
     print_info "🎯 Game Servers:"
@@ -353,23 +314,16 @@ display_config_summary() {
 modify_configuration() {
     echo ""
     print_info "Which setting would you like to change?"
-    print_info "Enter the number (1-19) or 'done' to finish:"
+    print_info "Enter the number (1-7) or 'done' to finish:"
     
     while true; do
-        read -p "Setting to change (1-19 or 'done'): " choice
+        read -p "Setting to change (1-7 or 'done'): " choice
         
         case $choice in
             1) prompt_input "Application name" "$APP_NAME" "APP_NAME"; APP_DIR="/var/www/$APP_NAME" ;;
             2) prompt_input "Application port" "$APP_PORT" "APP_PORT" ;;
             3) print_info "App directory is automatically set based on app name" ;;
-            4) print_info "NextAuth URL is automatically set based on SSL/domain configuration" ;;
-            5) 
-                if prompt_yes_no "Generate new NextAuth secret?" "y"; then
-                    NEXTAUTH_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
-                    print_info "New secret generated"
-                fi
-                ;;
-            6) 
+            4) 
                 if prompt_yes_no "Enable SSL?" "$SETUP_SSL"; then
                     SETUP_SSL=true
                     if [ -z "$DOMAIN" ]; then
@@ -378,27 +332,15 @@ modify_configuration() {
                     if [ -z "$ADMIN_EMAIL" ]; then
                         prompt_input "Admin email" "" "ADMIN_EMAIL"
                     fi
-                    NEXTAUTH_URL="https://$DOMAIN"
                 else
                     SETUP_SSL=false
-                    NEXTAUTH_URL="http://localhost:$APP_PORT"
                 fi
                 ;;
-            7) prompt_input "Domain name" "$DOMAIN" "DOMAIN"; NEXTAUTH_URL="https://$DOMAIN" ;;
-            8) prompt_input "Admin email" "$ADMIN_EMAIL" "ADMIN_EMAIL" ;;
-            9) prompt_input "MongoDB URI" "$MONGODB_URI" "MONGODB_URI" ;;
-            10) prompt_input "Discord Client ID" "$DISCORD_CLIENT_ID" "DISCORD_CLIENT_ID" ;;
-            11) prompt_input "Discord Client Secret" "$DISCORD_CLIENT_SECRET" "DISCORD_CLIENT_SECRET" ;;
-            12) prompt_input "Discord Bot Token" "$DISCORD_BOT_TOKEN" "DISCORD_BOT_TOKEN" ;;
-            13) prompt_input "Discord Guild ID" "$DISCORD_GUILD_ID" "DISCORD_GUILD_ID" ;;
-            14) prompt_input "Discord Admin Role IDs" "$DISCORD_ADMIN_ROLE_IDS" "DISCORD_ADMIN_ROLE_IDS" ;;
-            15) prompt_input "SMTP Host" "$SMTP_HOST" "SMTP_HOST" ;;
-            16) prompt_input "SMTP Port" "$SMTP_PORT" "SMTP_PORT" ;;
-            17) prompt_input "SMTP User" "$SMTP_USER" "SMTP_USER" ;;
-            18) prompt_input "SMTP Password" "$SMTP_PASS" "SMTP_PASS" ;;
-            19) prompt_input "From Email" "$SMTP_FROM" "SMTP_FROM" ;;
+            5) prompt_input "Domain name" "$DOMAIN" "DOMAIN" ;;
+            6) prompt_input "Admin email" "$ADMIN_EMAIL" "ADMIN_EMAIL" ;;
+            7) prompt_input "MongoDB URI" "$MONGODB_URI" "MONGODB_URI" ;;
             done|DONE) break ;;
-            *) print_error "Invalid choice. Enter 1-19 or 'done'" ;;
+            *) print_error "Invalid choice. Enter 1-7 or 'done'" ;;
         esac
         
         echo ""
@@ -568,30 +510,18 @@ setup_environment_config() {
     # Ensure app directory exists
     mkdir -p "$APP_DIR"
     
-    # Create .env.local with all collected configuration
+    # Create .env.local with minimal configuration
     cat > "$APP_DIR/.env.local" << EOF
-# NextAuth Configuration
-NEXTAUTH_URL=$NEXTAUTH_URL
-NEXTAUTH_SECRET=$NEXTAUTH_SECRET
-
-# Database
+# Database Configuration
 MONGODB_URI=$MONGODB_URI
 
-# Discord OAuth & Bot Configuration
-DISCORD_CLIENT_ID=$DISCORD_CLIENT_ID
-DISCORD_CLIENT_SECRET=$DISCORD_CLIENT_SECRET
-DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN
-DISCORD_GUILD_ID=$DISCORD_GUILD_ID
-DISCORD_ADMIN_ROLE_IDS=$DISCORD_ADMIN_ROLE_IDS
+# JWT Secret for authentication
+JWT_SECRET=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64)
 
-# Game Server Configuration is now managed through the Admin Panel
+# Site URL for email links
+SITE_URL=$(if [ "$SETUP_SSL" = true ]; then echo "https://$DOMAIN"; else echo "http://localhost:$APP_PORT"; fi)
 
-# Email Configuration (for verification and password reset)
-SMTP_HOST=$SMTP_HOST
-SMTP_PORT=$SMTP_PORT
-SMTP_USER=$SMTP_USER
-SMTP_PASS=$SMTP_PASS
-SMTP_FROM=$SMTP_FROM
+# All other settings (Discord, Email, Game Servers) are configured through the admin panel
 EOF
     
     # Set proper ownership and permissions
@@ -1108,7 +1038,7 @@ validate_installation() {
         validation_failed=true
     else
         # Check for required environment variables
-        local required_vars=("NEXTAUTH_URL" "NEXTAUTH_SECRET" "MONGODB_URI")
+        local required_vars=("MONGODB_URI" "JWT_SECRET" "SITE_URL")
         for var in "${required_vars[@]}"; do
             if ! grep -q "^$var=" "$APP_DIR/.env.local"; then
                 print_error "Required environment variable $var is missing from .env.local"
@@ -1211,13 +1141,23 @@ display_completion_info() {
     echo ""
     
     print_info "🔧 Next Steps:"
-    echo "1. Configure your Discord application OAuth settings:"
-    echo "   - Go to: https://discord.com/developers/applications"
-    echo "   - Add redirect URI: $NEXTAUTH_URL/api/auth/callback/discord"
     echo ""
-    echo "2. Test your website in a browser"
+    if [ "$SETUP_SSL" = true ]; then
+        print_status "🌐 Visit your website at: https://$DOMAIN"
+    else
+        # Get server IP address
+        SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ipinfo.io/ip 2>/dev/null || hostname -I | awk '{print $1}')
+        print_status "🌐 Visit your website at: http://$SERVER_IP:$APP_PORT"
+        echo "   (or http://localhost:$APP_PORT if accessing locally)"
+    fi
     echo ""
-    echo "3. If you need to modify settings later:"
+    echo "1. Complete initial setup to create your admin account"
+    echo "2. Use the 'Admin' button (not /admin URL) to access the admin panel"
+    echo "3. Configure integrations (Discord, Steam, Google) in admin panel"
+    echo "4. Add your game servers through admin panel"
+    echo "5. Customize your website colors and content"
+    echo ""
+    echo "📝 If you need to modify database settings later:"
     echo "   - Edit: $APP_DIR/.env.local"
     echo "   - Restart: sudo -u www-data pm2 restart $APP_NAME"
     

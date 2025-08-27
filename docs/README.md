@@ -32,7 +32,7 @@ The installation script will:
 - **Content Management** - All text and content editable
 
 ### Server Management
-- **Add Game Servers** - Support for multiple game types (FiveM, RedM, Minecraft, etc.)
+- **Add Game Servers** - Support for multiple game types (Minecraft, Rust, GMod, CS:GO, etc.)
 - **Real-time Monitoring** - Player count, ping, and status
 - **Automatic Display** - Servers appear on homepage automatically
 

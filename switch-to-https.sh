@@ -36,14 +36,8 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
-# Update NEXTAUTH_URL to use HTTPS
-if grep -q "NEXTAUTH_URL=http://" "$ENV_FILE"; then
-    print_info "Updating NEXTAUTH_URL to use HTTPS..."
-    sed -i 's|NEXTAUTH_URL=http://|NEXTAUTH_URL=https://|g' "$ENV_FILE"
-    print_status "Environment file updated"
-else
-    print_info "NEXTAUTH_URL is already using HTTPS or not found"
-fi
+# NextAuth is no longer used - configuration handled in admin panel
+print_info "Authentication configuration is handled through the admin panel"
 
 # Restart the application
 print_info "Restarting application service..."

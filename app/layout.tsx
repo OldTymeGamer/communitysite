@@ -5,6 +5,7 @@ import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { FloatingParticles } from "@/components/floating-particles"
 import { AuthProvider } from "@/components/session-provider"
+import { SetupRedirect } from "@/components/setup-redirect"
 
 const rye = Rye({
   weight: "400",
@@ -20,11 +21,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "RedM Community Hub - Wild West Multiplayer",
+  title: "Community Website - Multi-Game Platform",
   description:
-    "Join the ultimate Red Dead Redemption 2 multiplayer community. Find servers, download mods, and connect with fellow outlaws.",
+    "Join our multi-game community platform. Find servers, connect with players, and build your gaming community.",
   generator: "v0.app",
-  keywords: "RedM, Red Dead Redemption 2, multiplayer, roleplay, western, community",
+  keywords: "gaming, community, multiplayer, servers, roleplay, survival",
   icons: {
     icon: "/logo.png",
   },
@@ -39,6 +40,7 @@ export default function RootLayout({
     <html lang="en" className={`${rye.variable} ${inter.variable} antialiased`}>
       <body className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal text-sage-green">
         <AuthProvider>
+          <SetupRedirect />
           <FloatingParticles />
           <Navigation />
           <main className="relative z-10">{children}</main>

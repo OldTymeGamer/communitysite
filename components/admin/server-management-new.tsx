@@ -36,7 +36,7 @@ interface GameServer {
   playerCount: number
   maxPlayers: number
   ping: number
-  gameType: "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
+  gameType: "roleplay" | "survival" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
   createdAt: string
   updatedAt: string
 }
@@ -52,7 +52,7 @@ export function ServerManagementNew() {
     ip: "",
     port: 30120,
     apiKey: "",
-    gameType: "other" as "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other",
+    gameType: "other" as "roleplay" | "survival" | "minecraft" | "rust" | "gmod" | "csgo" | "other",
     isPublic: true
   })
 
@@ -239,7 +239,7 @@ export function ServerManagementNew() {
                     <select
                       id="gameType"
                       value={formData.gameType}
-                      onChange={(e) => setFormData({ ...formData, gameType: e.target.value as "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other" })}
+                      onChange={(e) => setFormData({ ...formData, gameType: e.target.value as "roleplay" | "survival" | "minecraft" | "rust" | "gmod" | "csgo" | "other" })}
                       className="w-full px-3 py-2 bg-charcoal border border-amber-gold/30 rounded-md text-sage-green"
                       required
                     >
@@ -248,8 +248,8 @@ export function ServerManagementNew() {
                       <option value="rust">Rust</option>
                       <option value="gmod">Garry's Mod</option>
                       <option value="csgo">CS:GO</option>
-                      <option value="redm">RedM</option>
-                      <option value="fivem">FiveM</option>
+                      <option value="roleplay">Roleplay</option>
+                      <option value="survival">Survival</option>
                     </select>
                   </div>
                 </div>

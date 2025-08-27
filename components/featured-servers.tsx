@@ -12,7 +12,7 @@ interface Server {
   description: string
   ip: string
   port: number
-  gameType: "redm" | "fivem" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
+  gameType: "roleplay" | "survival" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
   isPublic: boolean
   isOnline: boolean
   playerCount: number
@@ -85,7 +85,7 @@ function usePing(serverIp: string, serverPort: string, userLocation: { lat: numb
       const start = performance.now()
       try {
         // Try to ping the actual server endpoint
-        const response = await fetch(`/api/redm/ping?ip=${serverIp}&port=${serverPort}`, { 
+        const response = await fetch(`/api/servers/ping?ip=${serverIp}&port=${serverPort}`, { 
           method: "GET", 
           cache: "no-store" 
         })
@@ -130,7 +130,7 @@ function useServerData() {
   useEffect(() => {
     const fetchServerData = async () => {
       try {
-        const response = await fetch('/api/redm/players', { cache: 'no-store' })
+        const response = await fetch('/api/servers/players', { cache: 'no-store' })
         const data = await response.json()
         setServerData({
           players: data.count || 0,

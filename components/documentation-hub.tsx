@@ -33,42 +33,39 @@ const mockDocumentation: DocSection[] = [
   {
     id: "installation",
     title: "Installation Guide",
-    description: "Get started with RedM installation and setup",
+    description: "Get started with game client installation and setup",
     icon: BookOpen,
     color: "text-blue-400",
     articles: [
       {
-        id: "redm-install",
-        title: "Installing RedM Client",
-        description: "Step-by-step guide to install the RedM client",
-        author: "RedM Team",
+        id: "game-install",
+        title: "Installing Game Client",
+        description: "Step-by-step guide to install the game client",
+        author: "Community Team",
         lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         readTime: "5 min",
         difficulty: "beginner",
         rating: 4.9,
-        content: `# Installing RedM Client
+        content: `# Installing Game Client
 
 ## Prerequisites
-- Red Dead Redemption 2 (Steam or Epic Games)
+- Base game installed (Steam, Epic Games, etc.)
 - Windows 10/11 (64-bit)
 - Visual C++ Redistributable
 
 ## Installation Steps
 
-1. **Download RedM**
-   \`\`\`bash
-   # Download from official website
-   https://redm.gg/download
-   \`\`\`
+1. **Download Client**
+   Download the game client from the official website or community resources.
 
 2. **Extract Files**
    Extract the downloaded archive to a folder of your choice.
 
-3. **Run RedM**
-   Double-click \`RedM.exe\` to start the client.
+3. **Run Client**
+   Double-click the executable to start the client.
 
 ## Troubleshooting
-- Ensure RDR2 is properly installed
+- Ensure base game is properly installed
 - Run as administrator if needed
 - Check firewall settings`,
       },
