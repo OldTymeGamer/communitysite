@@ -1,104 +1,81 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { connectToDatabase } from '@/lib/mongodb'
-import { ObjectId } from 'mongodb'
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { connectDB } from "@/lib/db"
+import { GameServer } from "@/lib/models/GameServer"
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { db } = await connectToDatabase()
-    const servers = await db.collection('game_servers').find({}).toArray()
-
+    await connectDB()
+    const servers = await GameServer.find().sort({ createdAt: -1 })
+    
+    // Update server status for each server
+    for (const server of servers) {
+      await updateServerStatus(server)
+    }
+    
     return NextResponse.json(servers)
   } catch (error) {
-    console.error('Error fetching servers:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error fetching servers:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { db } = await connectToDatabase()
-    
-    const serverData = {
-      ...body,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true
-    }
-    
-    const result = await db.collection('game_servers').insertOne(serverData)
+    const data = await request.json()
+    await connectDB()
 
-    return NextResponse.json({ success: true, id: result.insertedId })
+    const server = await GameServer.create(data)
+    await updateServerStatus(server)
+    
+    return NextResponse.json(server)
   } catch (error) {
-    console.error('Error creating server:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error creating server:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function updateServerStatus(server: any) {
   try {
-    const session = await getServerSession(authOptions)
+    const startTime = Date.now()
     
-    if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Try to ping the server
+    const response = await fetch(`http://${server.ip}:${server.port}/info.json`, {
+      method: 'GET',
+      timeout: 5000,
+    }).catch(() => null)
+    
+    const ping = Date.now() - startTime
+    
+    if (response && response.ok) {
+      const data = await response.json().catch(() => ({}))
+      
+      server.isOnline = true
+      server.playerCount = data.clients || 0
+      server.maxPlayers = data.sv_maxclients || 32
+      server.ping = ping
+    } else {
+      server.isOnline = false
+      server.ping = ping > 5000 ? 999 : ping
     }
-
-    const body = await request.json()
-    const { _id, ...updateData } = body
-    const { db } = await connectToDatabase()
     
-    const result = await db.collection('game_servers').updateOne(
-      { _id: new ObjectId(_id) },
-      { 
-        $set: {
-          ...updateData,
-          updatedAt: new Date()
-        }
-      }
-    )
-
-    return NextResponse.json({ success: true, result })
+    server.lastChecked = new Date()
+    await server.save()
   } catch (error) {
-    console.error('Error updating server:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-    
-    if (!id) {
-      return NextResponse.json({ error: 'Server ID required' }, { status: 400 })
-    }
-
-    const { db } = await connectToDatabase()
-    const result = await db.collection('game_servers').deleteOne({ _id: new ObjectId(id) })
-
-    return NextResponse.json({ success: true, result })
-  } catch (error) {
-    console.error('Error deleting server:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    server.isOnline = false
+    server.ping = 999
+    server.lastChecked = new Date()
+    await server.save()
   }
 }

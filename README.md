@@ -210,8 +210,7 @@ The installation script will:
 - Fedora
 - Arch Linux
 
-### Manual Installation
-If you prefer to install manually, follow the development setup and then configure Nginx, PM2, and SSL manually.
+
 
 ### Installation Process Details
 
@@ -252,29 +251,7 @@ curl -sSL https://raw.githubusercontent.com/OldTymeGamer/communitysite/main/inst
 # 7. Clean up temporary files
 ```
 
-## 📁 Project Structure
 
-```
-communitysite/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── admin/             # Admin dashboard
-│   ├── auth/              # Authentication pages
-│   └── ...                # Other pages
-├── components/            # React components
-│   ├── ui/               # Reusable UI components
-│   ├── admin/            # Admin-specific components
-│   └── ...               # Feature components
-├── lib/                   # Utility libraries
-│   ├── models/           # Database models
-│   ├── db.ts             # Database connection
-│   └── utils.ts          # Helper functions
-├── public/               # Static assets
-├── styles/               # Global styles
-├── types/                # TypeScript definitions
-├── docs/                 # Documentation
-└── deploy.sh             # Deployment script
-```
 
 ## 🎯 Key Components
 

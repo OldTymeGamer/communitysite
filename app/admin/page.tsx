@@ -3,10 +3,11 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserManagement } from "@/components/admin/user-management"
-import { ServerManagement } from "@/components/admin/server-management"
+import { ServerManagementNew } from "@/components/admin/server-management-new"
 import { ContentModeration } from "@/components/admin/content-moderation"
 import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
-import { Users, Server, Shield, BarChart3, Settings } from "lucide-react"
+import { WebsiteSettings } from "@/components/admin/website-settings"
+import { Users, Server, Shield, BarChart3, Settings, Globe } from "lucide-react"
 
 export default function AdminDashboard() {
   return (
@@ -23,7 +24,7 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-charcoal-light/50 border border-amber-gold/20">
+          <TabsList className="grid w-full grid-cols-5 bg-charcoal-light/50 border border-amber-gold/20">
             <TabsTrigger
               value="analytics"
               className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
@@ -59,6 +60,13 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
+            <TabsTrigger
+              value="website"
+              className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
+            >
+              <Globe className="h-4 w-4" />
+              Website
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics">
@@ -70,7 +78,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="servers">
-            <ServerManagement />
+            <ServerManagementNew />
           </TabsContent>
 
           <TabsContent value="moderation">
@@ -89,6 +97,10 @@ export default function AdminDashboard() {
                 <p className="text-sage-green">Settings panel coming soon...</p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="website">
+            <WebsiteSettings />
           </TabsContent>
         </Tabs>
       </motion.div>

@@ -14,7 +14,14 @@ const particles = Array.from({ length: 50 }, (_, i) => ({
   duration: Math.random() * 20 + 10,
 }))
 
-const heroImages = [
+interface WebsiteSettings {
+  siteName: string
+  heroTitle: string
+  heroDescription: string
+  galleryImages: string[]
+}
+
+const defaultImages = [
   "/gallery1.jpg",
   "/gallery2.jpg",
   "/gallery3.jpg",
@@ -24,7 +31,13 @@ const heroImages = [
 export function HeroSection() {
   const [mounted, setMounted] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [shuffledImages, setShuffledImages] = useState<string[]>(heroImages)
+  const [settings, setSettings] = useState<WebsiteSettings>({
+    siteName: "Community Website",
+    heroTitle: "Welcome to the Wild West",
+    heroDescription: "Join the ultimate Red Dead Redemption 2 multiplayer community. Experience authentic roleplay, epic adventures, and forge your legend in the frontier.",
+    galleryImages: defaultImages
+  })
+  const [shuffledImages, setShuffledImages] = useState<string[]>(defaultImages)
   const [discordCount, setDiscordCount] = useState<number>(0)
   const [gamePlayerCount, setGamePlayerCount] = useState<number>(0)
   const { scrollY } = useScroll()
@@ -34,7 +47,21 @@ export function HeroSection() {
 
   useEffect(() => {
     setMounted(true)
+    fetchSettings()
   }, [])
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/website-settings")
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data)
+        setShuffledImages(data.galleryImages || defaultImages)
+      }
+    } catch (error) {
+      console.error("Failed to fetch website settings:", error)
+    }
+  }
 
   useEffect(() => {
     if (!mounted) return
@@ -159,7 +186,7 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 0.2 }}
         >
           <TypewriterText
-            text="Welcome to the Wild West"
+            text={settings.heroTitle}
             className="font-rye text-4xl md:text-7xl lg:text-8xl text-amber-gold mb-6 leading-tight drop-shadow-2xl"
           />
         </motion.div>
@@ -170,8 +197,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.8 }}
         >
-          Join the ultimate Red Dead Redemption 2 multiplayer community. Experience authentic roleplay, epic adventures,
-          and forge your legend in the frontier.
+          {settings.heroDescription}
         </motion.p>
 
         <motion.div

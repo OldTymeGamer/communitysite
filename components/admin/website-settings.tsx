@@ -1,0 +1,556 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  Settings, 
+  Upload, 
+  Save, 
+  RefreshCw, 
+  Globe, 
+  Image as ImageIcon,
+  Palette,
+  Link,
+  Download,
+  AlertCircle,
+  CheckCircle
+} from "lucide-react"
+import { toast } from "sonner"
+
+interface WebsiteSettings {
+  siteName: string
+  heroTitle: string
+  heroDescription: string
+  galleryImages: string[]
+  socialLinks: {
+    discord: string
+    twitter: string
+    youtube: string
+    twitch: string
+  }
+  contactEmail: string
+  primaryColor: string
+  secondaryColor: string
+}
+
+interface UpdateInfo {
+  currentVersion: string
+  latestVersion: string
+  hasUpdate: boolean
+  changelog: string[]
+}
+
+export function WebsiteSettings() {
+  const [settings, setSettings] = useState<WebsiteSettings>({
+    siteName: "Community Website",
+    heroTitle: "Welcome to the Wild West",
+    heroDescription: "Join the ultimate Red Dead Redemption 2 multiplayer community. Experience authentic roleplay, epic adventures, and forge your legend in the frontier.",
+    galleryImages: ["/gallery1.jpg", "/gallery2.jpg", "/gallery3.jpg", "/gallery4.jpg"],
+    socialLinks: {
+      discord: "",
+      twitter: "",
+      youtube: "",
+      twitch: ""
+    },
+    contactEmail: "",
+    primaryColor: "#FFC107",
+    secondaryColor: "#4FC3F7"
+  })
+
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo>({
+    currentVersion: "1.0.0",
+    latestVersion: "1.0.0",
+    hasUpdate: false,
+    changelog: []
+  })
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  useEffect(() => {
+    fetchSettings()
+    checkForUpdates()
+  }, [])
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/website-settings")
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings:", error)
+    }
+  }
+
+  const checkForUpdates = async () => {
+    try {
+      const response = await fetch("/api/admin/check-updates")
+      if (response.ok) {
+        const data = await response.json()
+        setUpdateInfo(data)
+      }
+    } catch (error) {
+      console.error("Failed to check for updates:", error)
+    }
+  }
+
+  const saveSettings = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/admin/website-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      })
+
+      if (response.ok) {
+        toast.success("Settings saved successfully!")
+      } else {
+        toast.error("Failed to save settings")
+      }
+    } catch (error) {
+      toast.error("Failed to save settings")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateWebsite = async () => {
+    setIsUpdating(true)
+    try {
+      const response = await fetch("/api/admin/update-website", {
+        method: "POST"
+      })
+
+      if (response.ok) {
+        toast.success("Website updated successfully! Restarting...")
+        setTimeout(() => {
+          window.location.reload()
+        }, 3000)
+      } else {
+        toast.error("Failed to update website")
+      }
+    } catch (error) {
+      toast.error("Failed to update website")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append("image", file)
+    formData.append("index", index.toString())
+
+    try {
+      const response = await fetch("/api/admin/upload-gallery-image", {
+        method: "POST",
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const newImages = [...settings.galleryImages]
+        newImages[index] = data.url
+        setSettings({ ...settings, galleryImages: newImages })
+        toast.success("Image uploaded successfully!")
+      } else {
+        toast.error("Failed to upload image")
+      }
+    } catch (error) {
+      toast.error("Failed to upload image")
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-rye text-amber-gold">Website Settings</h2>
+          <p className="text-sage-green/80">Customize your community website</p>
+        </div>
+        
+        {updateInfo.hasUpdate && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3"
+          >
+            <Badge variant="secondary" className="bg-amber-gold/20 text-amber-gold border-amber-gold/30">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              Update Available
+            </Badge>
+            <Button
+              onClick={updateWebsite}
+              disabled={isUpdating}
+              className="bg-amber-gold hover:bg-amber-gold/90 text-charcoal"
+            >
+              {isUpdating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Update Now
+                </>
+              )}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 bg-charcoal-light/50 border border-amber-gold/20">
+          <TabsTrigger value="general" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
+            <Settings className="w-4 h-4 mr-2" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="gallery" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
+            <ImageIcon className="w-4 h-4 mr-2" />
+            Gallery
+          </TabsTrigger>
+          <TabsTrigger value="social" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
+            <Link className="w-4 h-4 mr-2" />
+            Social
+          </TabsTrigger>
+          <TabsTrigger value="updates" className="data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Updates
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
+          <Card className="bg-charcoal-light/80 border-amber-gold/20">
+            <CardHeader>
+              <CardTitle className="text-amber-gold flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                General Settings
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Configure basic website information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="siteName" className="text-sage-green">Site Name</Label>
+                  <Input
+                    id="siteName"
+                    value={settings.siteName}
+                    onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail" className="text-sage-green">Contact Email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={settings.contactEmail}
+                    onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="heroTitle" className="text-sage-green">Hero Title</Label>
+                <Input
+                  id="heroTitle"
+                  value={settings.heroTitle}
+                  onChange={(e) => setSettings({ ...settings, heroTitle: e.target.value })}
+                  className="bg-charcoal border-amber-gold/30 text-sage-green"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="heroDescription" className="text-sage-green">Hero Description</Label>
+                <Textarea
+                  id="heroDescription"
+                  value={settings.heroDescription}
+                  onChange={(e) => setSettings({ ...settings, heroDescription: e.target.value })}
+                  className="bg-charcoal border-amber-gold/30 text-sage-green min-h-[100px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="primaryColor" className="text-sage-green">Primary Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="primaryColor"
+                      type="color"
+                      value={settings.primaryColor}
+                      onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                      className="w-16 h-10 p-1 bg-charcoal border-amber-gold/30"
+                    />
+                    <Input
+                      value={settings.primaryColor}
+                      onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="secondaryColor" className="text-sage-green">Secondary Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="secondaryColor"
+                      type="color"
+                      value={settings.secondaryColor}
+                      onChange={(e) => setSettings({ ...settings, secondaryColor: e.target.value })}
+                      className="w-16 h-10 p-1 bg-charcoal border-amber-gold/30"
+                    />
+                    <Input
+                      value={settings.secondaryColor}
+                      onChange={(e) => setSettings({ ...settings, secondaryColor: e.target.value })}
+                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="gallery">
+          <Card className="bg-charcoal-light/80 border-amber-gold/20">
+            <CardHeader>
+              <CardTitle className="text-amber-gold flex items-center gap-2">
+                <ImageIcon className="w-5 h-5" />
+                Gallery Images
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Manage hero section background images
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {settings.galleryImages.map((image, index) => (
+                  <div key={index} className="space-y-3">
+                    <Label className="text-sage-green">Image {index + 1}</Label>
+                    <div className="relative group">
+                      <div 
+                        className="w-full h-32 bg-cover bg-center rounded-lg border-2 border-amber-gold/30"
+                        style={{ backgroundImage: `url(${image})` }}
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                        <label className="cursor-pointer">
+                          <Upload className="w-8 h-8 text-white" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(e, index)}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <Input
+                      value={image}
+                      onChange={(e) => {
+                        const newImages = [...settings.galleryImages]
+                        newImages[index] = e.target.value
+                        setSettings({ ...settings, galleryImages: newImages })
+                      }}
+                      className="bg-charcoal border-amber-gold/30 text-sage-green text-sm"
+                      placeholder="Image URL"
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="social">
+          <Card className="bg-charcoal-light/80 border-amber-gold/20">
+            <CardHeader>
+              <CardTitle className="text-amber-gold flex items-center gap-2">
+                <Link className="w-5 h-5" />
+                Social Links
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Configure social media links
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="discord" className="text-sage-green">Discord Server</Label>
+                  <Input
+                    id="discord"
+                    value={settings.socialLinks.discord}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      socialLinks: { ...settings.socialLinks, discord: e.target.value }
+                    })}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    placeholder="https://discord.gg/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="twitter" className="text-sage-green">Twitter/X</Label>
+                  <Input
+                    id="twitter"
+                    value={settings.socialLinks.twitter}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      socialLinks: { ...settings.socialLinks, twitter: e.target.value }
+                    })}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    placeholder="https://twitter.com/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="youtube" className="text-sage-green">YouTube</Label>
+                  <Input
+                    id="youtube"
+                    value={settings.socialLinks.youtube}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      socialLinks: { ...settings.socialLinks, youtube: e.target.value }
+                    })}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    placeholder="https://youtube.com/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="twitch" className="text-sage-green">Twitch</Label>
+                  <Input
+                    id="twitch"
+                    value={settings.socialLinks.twitch}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      socialLinks: { ...settings.socialLinks, twitch: e.target.value }
+                    })}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    placeholder="https://twitch.tv/..."
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="updates">
+          <Card className="bg-charcoal-light/80 border-amber-gold/20">
+            <CardHeader>
+              <CardTitle className="text-amber-gold flex items-center gap-2">
+                <RefreshCw className="w-5 h-5" />
+                Website Updates
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Check for and install website updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-charcoal/50 rounded-lg border border-amber-gold/20">
+                <div>
+                  <p className="text-sage-green font-medium">Current Version</p>
+                  <p className="text-amber-gold text-lg font-rye">{updateInfo.currentVersion}</p>
+                </div>
+                <div>
+                  <p className="text-sage-green font-medium">Latest Version</p>
+                  <p className="text-amber-gold text-lg font-rye">{updateInfo.latestVersion}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {updateInfo.hasUpdate ? (
+                    <Badge variant="secondary" className="bg-amber-gold/20 text-amber-gold border-amber-gold/30">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      Update Available
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Up to Date
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {updateInfo.hasUpdate && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sage-green font-medium mb-2">Changelog</h4>
+                    <div className="bg-charcoal/50 rounded-lg p-4 border border-amber-gold/20">
+                      <ul className="space-y-1 text-sage-green/80">
+                        {updateInfo.changelog.map((change, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-amber-gold mt-1">•</span>
+                            {change}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={updateWebsite}
+                    disabled={isUpdating}
+                    className="w-full bg-amber-gold hover:bg-amber-gold/90 text-charcoal"
+                  >
+                    {isUpdating ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Updating Website...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Update Website
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              <Button
+                onClick={checkForUpdates}
+                variant="outline"
+                className="w-full border-amber-gold/30 text-amber-gold hover:bg-amber-gold/10"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Check for Updates
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <div className="flex justify-end">
+        <Button
+          onClick={saveSettings}
+          disabled={isLoading}
+          className="bg-amber-gold hover:bg-amber-gold/90 text-charcoal px-8"
+        >
+          {isLoading ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Settings
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}

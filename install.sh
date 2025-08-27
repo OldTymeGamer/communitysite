@@ -9,9 +9,9 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[1;36m'    # Bright cyan instead of dark blue
+BLUE='\033[1;36m'    # Bright cyan for better visibility
 PURPLE='\033[1;35m'  # Bright purple
-CYAN='\033[0;36m'
+CYAN='\033[1;36m'    # Bright cyan for better visibility
 NC='\033[0m' # No Color
 
 # Default values
@@ -281,11 +281,8 @@ collect_all_config() {
     prompt_input "Discord Guild ID (your server ID)" "" "DISCORD_GUILD_ID"
     prompt_input "Discord Admin Role IDs (comma-separated)" "" "DISCORD_ADMIN_ROLE_IDS"
     
-    # Game Server Configuration - Removed from installer
-    # Servers will be managed through the admin panel
-    GAME_SERVER_IP=""
-    GAME_SERVER_PORT=""
-    SERVER_API_KEY=""
+    # Game Server Configuration - Managed through admin panel
+    # No longer configured during installation
     
     # Email Configuration
     echo ""
@@ -338,14 +335,8 @@ display_config_summary() {
     echo "  14. Admin Role IDs: ${DISCORD_ADMIN_ROLE_IDS:-'Not set'}"
     
     echo ""
-    print_info "🎯 Game Server:"
-    echo "  15. Server IP: ${GAME_SERVER_IP:-'Not configured (optional)'}"
-    echo "  16. Server Port: ${GAME_SERVER_PORT:-'Not configured (optional)'}"
-    if [ -n "$SERVER_API_KEY" ]; then
-        echo "  17. API Key: ${SERVER_API_KEY:0:10}... (hidden)"
-    else
-        echo "  17. API Key: Not configured (optional)"
-    fi
+    print_info "🎯 Game Servers:"
+    echo "  15. Server Management: Available in Admin Panel"
     
     echo ""
     print_info "📧 Email (SMTP):"
@@ -362,10 +353,10 @@ display_config_summary() {
 modify_configuration() {
     echo ""
     print_info "Which setting would you like to change?"
-    print_info "Enter the number (1-22) or 'done' to finish:"
+    print_info "Enter the number (1-19) or 'done' to finish:"
     
     while true; do
-        read -p "Setting to change (1-22 or 'done'): " choice
+        read -p "Setting to change (1-19 or 'done'): " choice
         
         case $choice in
             1) prompt_input "Application name" "$APP_NAME" "APP_NAME"; APP_DIR="/var/www/$APP_NAME" ;;
@@ -401,16 +392,14 @@ modify_configuration() {
             12) prompt_input "Discord Bot Token" "$DISCORD_BOT_TOKEN" "DISCORD_BOT_TOKEN" ;;
             13) prompt_input "Discord Guild ID" "$DISCORD_GUILD_ID" "DISCORD_GUILD_ID" ;;
             14) prompt_input "Discord Admin Role IDs" "$DISCORD_ADMIN_ROLE_IDS" "DISCORD_ADMIN_ROLE_IDS" ;;
-            15) prompt_input "Game Server IP" "$GAME_SERVER_IP" "GAME_SERVER_IP" ;;
-            16) prompt_input "Game Server Port" "$GAME_SERVER_PORT" "GAME_SERVER_PORT" ;;
-            17) prompt_input "Server API Key" "$SERVER_API_KEY" "SERVER_API_KEY" ;;
-            18) prompt_input "SMTP Host" "$SMTP_HOST" "SMTP_HOST" ;;
-            19) prompt_input "SMTP Port" "$SMTP_PORT" "SMTP_PORT" ;;
-            20) prompt_input "SMTP User" "$SMTP_USER" "SMTP_USER" ;;
-            21) prompt_input "SMTP Password" "$SMTP_PASS" "SMTP_PASS" ;;
-            22) prompt_input "From Email" "$SMTP_FROM" "SMTP_FROM" ;;
+            15) print_info "Game servers are managed through the Admin Panel after installation" ;;
+            16) prompt_input "SMTP Host" "$SMTP_HOST" "SMTP_HOST" ;;
+            17) prompt_input "SMTP Port" "$SMTP_PORT" "SMTP_PORT" ;;
+            18) prompt_input "SMTP User" "$SMTP_USER" "SMTP_USER" ;;
+            19) prompt_input "SMTP Password" "$SMTP_PASS" "SMTP_PASS" ;;
+            20) prompt_input "From Email" "$SMTP_FROM" "SMTP_FROM" ;;
             done|DONE) break ;;
-            *) print_error "Invalid choice. Enter 1-22 or 'done'" ;;
+            *) print_error "Invalid choice. Enter 1-20 or 'done'" ;;
         esac
         
         echo ""
@@ -816,19 +805,20 @@ validate_dns_with_retry() {
                 exit 1
             fi
         elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
-            print_warning "Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
+            print_warning "⚠️  Domain $DOMAIN resolves to $DOMAIN_IP but server IP is $SERVER_IP"
             print_info "Please update your DNS records:"
-            print_info "  A record: $DOMAIN -> $SERVER_IP"
-            print_info "  A record: www.$DOMAIN -> $SERVER_IP"
+            print_info "  📍 A record: $DOMAIN -> $SERVER_IP"
+            print_info "  📍 A record: www.$DOMAIN -> $SERVER_IP"
             print_info "DNS changes can take 5-60 minutes to propagate."
             echo ""
             
             if prompt_yes_no "Try DNS validation again?" "y"; then
-                print_info "Waiting 10 seconds before retry..."
-                sleep 10
+                print_info "Waiting 30 seconds before retry..."
+                sleep 30
                 continue
             else
                 print_error "DNS validation failed. Installation cannot continue without proper DNS configuration."
+                print_error "Please update your DNS records and run the installer again."
                 exit 1
             fi
         else

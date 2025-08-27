@@ -17,11 +17,25 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files
+.env
 .env*.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# uploads
+/public/uploads/
+
+# logs
+*.log
+logs/
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
 # vercel
 .vercel
