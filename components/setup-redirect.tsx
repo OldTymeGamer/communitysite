@@ -6,44 +6,49 @@ import { useRouter, usePathname } from "next/navigation"
 export function SetupRedirect() {
   const router = useRouter()
   const pathname = usePathname()
-  const [checking, setChecking] = useState(true)
+  const [checking, setChecking] = useState(false) // Start as false to avoid loading screen
 
   useEffect(() => {
     // Don't redirect if already on setup page or API routes
     if (pathname.startsWith('/setup') || pathname.startsWith('/api')) {
-      setChecking(false)
       return
     }
 
-    // Check if setup is needed
-    const checkSetup = async () => {
-      try {
-        console.log('Checking if setup is needed...')
-        const response = await fetch('/api/setup/initial')
-        if (response.ok) {
-          const data = await response.json()
-          console.log('Setup check result:', data)
-          if (data.needsSetup) {
-            console.log('Setup needed, redirecting to /setup')
-            router.push('/setup')
-          } else {
-            console.log('Setup not needed, owner exists')
+    // Only check setup if we're on the home page and not authenticated
+    // This prevents the loading screen from showing to all users
+    if (pathname === '/') {
+      const checkSetup = async () => {
+        try {
+          // First check if user is already logged in
+          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+          if (authToken) {
+            // User is logged in, no need to check setup
+            return
           }
-        } else {
-          console.error('Setup check failed with status:', response.status)
-        }
-      } catch (error) {
-        console.error('Setup check failed:', error)
-      } finally {
-        setChecking(false)
-      }
-    }
 
-    checkSetup()
+          setChecking(true)
+          const response = await fetch('/api/setup/initial')
+          if (response.ok) {
+            const data = await response.json()
+            if (data.needsSetup) {
+              router.push('/setup')
+            }
+          }
+        } catch (error) {
+          console.error('Setup check failed:', error)
+        } finally {
+          setChecking(false)
+        }
+      }
+
+      // Small delay to avoid hydration issues
+      const timer = setTimeout(checkSetup, 500)
+      return () => clearTimeout(timer)
+    }
   }, [pathname, router])
 
-  // Show loading state while checking
-  if (checking && !pathname.startsWith('/setup') && !pathname.startsWith('/api')) {
+  // Only show loading state on home page when actually checking
+  if (checking && pathname === '/') {
     return (
       <div className="fixed inset-0 bg-charcoal/80 flex items-center justify-center z-50">
         <div className="text-amber-gold">Checking setup status...</div>
@@ -51,5 +56,5 @@ export function SetupRedirect() {
     )
   }
 
-  return null // This component doesn't render anything
+  return null
 }

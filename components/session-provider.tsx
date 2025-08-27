@@ -24,16 +24,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Check for existing token on mount
-    // Use a small delay to ensure we're on the client side
-    const checkAuth = () => {
-      if (typeof window === 'undefined') {
-        setLoading(false)
-        return
-      }
+    setMounted(true)
+  }, [])
 
+  useEffect(() => {
+    if (!mounted) return
+
+    const checkAuth = () => {
       const token = localStorage.getItem('auth-token')
       if (token) {
         // Verify token with server
@@ -61,10 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Small delay to ensure hydration is complete
-    const timer = setTimeout(checkAuth, 100)
-    return () => clearTimeout(timer)
-  }, [])
+    checkAuth()
+  }, [mounted])
 
   const login = (token: string, userData: User) => {
     if (typeof window !== 'undefined') {
@@ -78,6 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('auth-token')
     }
     setUser(null)
+  }
+
+  // Don't render children until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return null
   }
 
   return (

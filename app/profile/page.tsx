@@ -73,7 +73,7 @@ export default function ProfilePage() {
       })
       
       if (response.ok) {
-        await update() // Refresh session
+        // Refresh user data - you might need to implement this or remove these lines
       }
     } catch (error) {
       console.error('Discord disconnection error:', error)
@@ -103,7 +103,7 @@ export default function ProfilePage() {
       })
 
       if (response.ok) {
-        await update() // Refresh session
+        // Refresh user data - you might need to implement this or remove these lines
         setProfilePictureUrl("")
       } else {
         const data = await response.json()
@@ -126,7 +126,7 @@ export default function ProfilePage() {
       })
 
       if (response.ok) {
-        await update() // Refresh session
+        // Refresh user data - you might need to implement this or remove these lines
       } else {
         const data = await response.json()
         setPictureError(data.error || 'Failed to remove profile picture')
@@ -140,10 +140,10 @@ export default function ProfilePage() {
 
   // Get the current profile picture to display
   const getCurrentProfilePicture = () => {
-    if (session?.user?.isDiscordConnected && session?.user?.discordAvatar) {
-      return session.user.discordAvatar
+    if (user?.isDiscordConnected && user?.discordAvatar) {
+      return user.discordAvatar
     }
-    return session?.user?.profilePicture
+    return user?.profilePicture
   }
 
   return (
@@ -160,15 +160,15 @@ export default function ProfilePage() {
                 <Avatar className="h-20 w-20">
                   <AvatarImage 
                     src={getCurrentProfilePicture() || undefined} 
-                    alt={session?.user?.username || "User"} 
+                    alt={user?.username || "User"} 
                   />
                   <AvatarFallback className="bg-amber-gold text-charcoal text-xl font-bold">
-                    {session?.user?.username?.charAt(0).toUpperCase() || "U"}
+                    {user?.username?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <CardTitle className="text-2xl font-rye text-amber-gold">
-                    {session?.user?.username || "User"}
+                    {user?.username || "User"}
                   </CardTitle>
                   <CardDescription className="text-sage-green">
                     Member since {new Date().toLocaleDateString()}
@@ -188,12 +188,12 @@ export default function ProfilePage() {
                   <div className="flex items-center space-x-3">
                     <User className="h-4 w-4 text-sage-green/60" />
                     <span className="text-sage-green">Username:</span>
-                    <span className="text-sage-green font-medium">{session?.user?.username}</span>
+                    <span className="text-sage-green font-medium">{user?.username}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Mail className="h-4 w-4 text-sage-green/60" />
                     <span className="text-sage-green">Email:</span>
-                    <span className="text-sage-green font-medium">{session?.user?.email}</span>
+                    <span className="text-sage-green font-medium">{user?.email}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Calendar className="h-4 w-4 text-sage-green/60" />
@@ -213,7 +213,7 @@ export default function ProfilePage() {
                 </h3>
                 
                 <div className="space-y-4">
-                  {session?.user?.isDiscordConnected && session?.user?.discordAvatar && (
+                  {user?.isDiscordConnected && user?.discordAvatar && (
                     <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                       <p className="text-sage-green text-sm mb-2">
                         <Check className="inline h-4 w-4 mr-1 text-blue-400" />
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  {(session?.user?.profilePicture || (session?.user?.isDiscordConnected && session?.user?.discordAvatar)) && (
+                  {(user?.profilePicture || (user?.isDiscordConnected && user?.discordAvatar)) && (
                     <Button
                       onClick={handleRemoveProfilePicture}
                       disabled={isUpdatingPicture}
@@ -278,7 +278,7 @@ export default function ProfilePage() {
                   Discord Connection
                 </h3>
                 
-                {session?.user?.isDiscordConnected ? (
+                {user?.isDiscordConnected ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                       <div className="flex items-center space-x-3">
@@ -286,7 +286,7 @@ export default function ProfilePage() {
                         <div>
                           <p className="text-sage-green font-medium">Discord Connected</p>
                           <p className="text-sage-green/70 text-sm">
-                            Connected as {session.user.discordUsername}
+                            Connected as {user.discordUsername}
                           </p>
                         </div>
                       </div>

@@ -9,9 +9,44 @@ import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
 import { WebsiteSettings } from "@/components/admin/website-settings"
 import { WebsiteCustomization } from "@/components/admin/website-customization"
 import { UpdateManagement } from "@/components/admin/update-management"
-import { Users, Server, Shield, BarChart3, Settings, Globe, Download } from "lucide-react"
+import { Users, Server, Shield, BarChart3, Settings, Globe, Download, Loader2 } from "lucide-react"
+import { useAuth } from "@/components/session-provider"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function AdminDashboard() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && (!user || (!user.isAdmin && !user.isOwner))) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-gold" />
+      </div>
+    )
+  }
+
+  if (!user || (!user.isAdmin && !user.isOwner)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal flex items-center justify-center">
+        <Card className="w-full max-w-md bg-charcoal-light/80 border-amber-gold/20">
+          <CardContent className="flex flex-col items-center py-8">
+            <Shield className="w-16 h-16 text-red-400 mb-4" />
+            <h2 className="text-xl font-bold text-sage-green mb-2">Access Denied</h2>
+            <p className="text-sage-green/80 text-center mb-4">
+              You need admin privileges to access this page.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal p-6">
       <motion.div
