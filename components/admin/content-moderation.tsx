@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Flag, MessageSquare, ImageIcon, AlertTriangle, Check, X } from "lucide-react"
+import { Flag, MessageSquare, ImageIcon, AlertTriangle, Check, X, Trash2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 const reportedPosts = [
@@ -63,12 +63,18 @@ const bannedUsers = [
 export function ContentModeration() {
   const [selectedTab, setSelectedTab] = useState("reports")
 
+  const [reports, setReports] = useState(reportedPosts)
+
   const handleApprove = (id: number) => {
-    console.log("Approved report:", id)
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status: "resolved" } : r))
   }
 
   const handleReject = (id: number) => {
-    console.log("Rejected report:", id)
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r))
+  }
+
+  const handleDelete = (id: number) => {
+    setReports(prev => prev.filter(r => r.id !== id))
   }
 
   const getTypeIcon = (type: string) => {
@@ -120,7 +126,7 @@ export function ContentModeration() {
           </TabsList>
 
           <TabsContent value="reports" className="space-y-4 mt-6">
-            {reportedPosts.map((report, index) => (
+            {reports.map((report, index) => (
               <motion.div
                 key={report.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -152,27 +158,38 @@ export function ContentModeration() {
                   </div>
                 </div>
 
-                {report.status === "pending" && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleApprove(report.id)}
-                      className="bg-sage-green hover:bg-sage-green/80 text-charcoal"
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleReject(report.id)}
-                      className="border-rust-red/30 text-rust-red hover:bg-rust-red/10"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {report.status === "pending" && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(report.id)}
+                        className="bg-sage-green hover:bg-sage-green/80 text-charcoal"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReject(report.id)}
+                        className="border-rust-red/30 text-rust-red hover:bg-rust-red/10"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(report.id)}
+                    className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
               </motion.div>
             ))}
           </TabsContent>

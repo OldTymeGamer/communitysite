@@ -26,27 +26,34 @@ export async function POST(request: NextRequest) {
     await connectDB()
     
     const serverData = await request.json()
-    
+
     // Validate required fields
     if (!serverData.name || !serverData.ip || !serverData.port) {
       return NextResponse.json({ error: 'Name, IP, and port are required' }, { status: 400 })
     }
-    
+
+    // Normalize/validate gameType against schema enum
+    const allowedTypes = [
+      'fivem','redm','minecraft','rust','gmod','csgo','cs2','valorant','apex','cod','battlefield','ark','7dtd','terraria','satisfactory','valheim','palworld','other'
+    ]
+    const normalizedType = typeof serverData.gameType === 'string' ? serverData.gameType.toLowerCase() : 'other'
+    serverData.gameType = allowedTypes.includes(normalizedType) ? normalizedType : 'other'
+
     // Check if server with same IP:port already exists
     const existingServer = await GameServer.findOne({
       ip: serverData.ip,
       port: serverData.port
     })
-    
+
     if (existingServer) {
       return NextResponse.json({ error: 'Server with this IP and port already exists' }, { status: 400 })
     }
-    
+
     const server = new GameServer({
       ...serverData,
       lastChecked: new Date()
     })
-    
+
     await server.save()
     
     return NextResponse.json({

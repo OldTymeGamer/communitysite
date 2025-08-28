@@ -58,7 +58,14 @@ const WebsiteSettingsSchema = new mongoose.Schema({
     accent: { type: String, default: "#8BC34A" },
     background: { type: String, default: "#1A1A1A" },
     surface: { type: String, default: "#2D2D2D" },
-    text: { type: String, default: "#FFFFFF" }
+    text: { type: String, default: "#FFFFFF" },
+    featuredServerCard: { type: String, default: "#3a3a3c" }
+  },
+
+  // Branding / Assets
+  assets: {
+    logoUrl: { type: String, default: "" },
+    faviconUrl: { type: String, default: "" }
   },
   
   // Integration Settings

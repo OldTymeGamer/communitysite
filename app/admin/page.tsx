@@ -6,10 +6,9 @@ import { UserManagement } from "@/components/admin/user-management"
 import { ServerManagementEnhanced } from "@/components/admin/server-management-enhanced"
 import { ContentModeration } from "@/components/admin/content-moderation"
 import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard"
-import { WebsiteSettings } from "@/components/admin/website-settings"
 import { WebsiteCustomization } from "@/components/admin/website-customization"
 import { UpdateManagement } from "@/components/admin/update-management"
-import { Users, Server, Shield, BarChart3, Settings, Globe, Download, Loader2 } from "lucide-react"
+import { Users, Server, Shield, BarChart3, Settings, Download, Loader2 } from "lucide-react"
 import { useAuth } from "@/components/session-provider"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
@@ -48,7 +47,7 @@ export default function AdminDashboard() {
     )
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal p-6">
+    <div className="min-h-screen bg-background p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -97,20 +96,8 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
-            <TabsTrigger
-              value="website"
-              className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
-            >
-              <Globe className="h-4 w-4" />
-              Website
-            </TabsTrigger>
-            <TabsTrigger
-              value="customization"
-              className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
-            >
-              <Settings className="h-4 w-4" />
-              Customize
-            </TabsTrigger>
+
+
             <TabsTrigger
               value="updates"
               className="flex items-center gap-2 data-[state=active]:bg-amber-gold data-[state=active]:text-charcoal"
@@ -137,24 +124,6 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="settings">
-            <Card className="bg-charcoal-light/80 border-amber-gold/20">
-              <CardHeader>
-                <CardTitle className="text-amber-gold">System Settings</CardTitle>
-                <CardDescription className="text-sage-green/80">
-                  Configure system-wide settings and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sage-green">Settings panel coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="website">
-            <WebsiteSettings />
-          </TabsContent>
-
-          <TabsContent value="customization">
             <WebsiteCustomization />
           </TabsContent>
 

@@ -131,31 +131,45 @@ export function UpdateManagement() {
       </div>
 
       {updateInfo?.error ? (
-        <Card className="bg-charcoal-light/80 border-red-500/20">
-          <CardHeader>
-            <CardTitle className="text-red-400 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Update Check Failed
-            </CardTitle>
-            <CardDescription className="text-sage-green/80">
-              Unable to check for updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-red-300">{updateInfo.error}</p>
-            </div>
-            <div className="mt-4 text-sm text-sage-green/60">
-              <p>This usually means:</p>
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Git is not installed or configured</li>
-                <li>No git repository is initialized</li>
-                <li>No remote origin is configured</li>
-                <li>Network connectivity issues</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+        process.env.NODE_ENV === 'development' ? (
+          <Card className="bg-charcoal-light/80 border-red-500/20">
+            <CardHeader>
+              <CardTitle className="text-red-400 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
+                Update Check Failed
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Unable to check for updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-300">{updateInfo.error}</p>
+              </div>
+              <div className="mt-4 text-sm text-sage-green/60">
+                <p>This usually means:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Git is not installed or configured</li>
+                  <li>No git repository is initialized</li>
+                  <li>No remote origin is configured</li>
+                  <li>Network connectivity issues</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-charcoal-light/80 border-amber-gold/20">
+            <CardHeader>
+              <CardTitle className="text-amber-gold flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                Up to Date
+              </CardTitle>
+              <CardDescription className="text-sage-green/80">
+                Current version: {updateInfo?.currentVersion || "Unknown"}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )
       ) : (
         <>
           <Card className="bg-charcoal-light/80 border-amber-gold/20">

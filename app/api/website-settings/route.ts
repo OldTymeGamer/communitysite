@@ -82,6 +82,7 @@ export async function GET() {
       galleryImages: settings.galleryImages,
       socialLinks: settings.socialLinks,
       colors: settings.colors,
+      assets: settings.assets,
       integrations: settings.integrations,
       features: settings.features,
       seo: settings.seo

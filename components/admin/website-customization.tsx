@@ -201,7 +201,7 @@ export function WebsiteCustomization() {
     setSaving(true)
     try {
       const response = await fetch("/api/admin/website-settings", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
       })
@@ -209,8 +209,14 @@ export function WebsiteCustomization() {
       if (response.ok) {
         toast.success("Website settings saved successfully!")
       } else {
-        const error = await response.json()
-        toast.error(error.error || "Failed to save settings")
+        let message = "Failed to save settings"
+        try {
+          const error = await response.json()
+          message = error?.error || message
+        } catch {
+          // Non-JSON response (e.g., 401 HTML), keep default message
+        }
+        toast.error(message)
       }
     } catch (error) {
       console.error("Save error:", error)
@@ -310,23 +316,33 @@ export function WebsiteCustomization() {
           <h2 className="text-2xl font-bold text-amber-gold">Website Customization</h2>
           <p className="text-sage-green/80">Customize your website appearance and functionality</p>
         </div>
-        <Button 
-          onClick={saveSettings} 
-          disabled={saving}
-          className="bg-amber-gold hover:bg-amber-gold/90 text-charcoal"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={saveSettings} 
+            disabled={saving}
+            className="bg-amber-gold hover:bg-amber-gold/90 text-charcoal"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+          <Button 
+            onClick={() => setSettings(defaultSettings)}
+            variant="outline"
+            className="border-amber-gold/40 text-amber-gold hover:bg-amber-gold/10"
+            title="Revert to default colors (requires Save to apply)"
+          >
+            Reset Colors
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
@@ -464,6 +480,62 @@ export function WebsiteCustomization() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Branding */}
+              <div className="mt-6 space-y-4">
+                <CardTitle className="text-amber-gold">Branding</CardTitle>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sage-green">Logo URL</Label>
+                    <Input
+                      value={(settings as any).assets?.logoUrl || ""}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        assets: { ...(prev as any).assets, logoUrl: e.target.value }
+                      }))}
+                      placeholder="/logo.png or https://..."
+                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sage-green">Favicon URL</Label>
+                    <Input
+                      value={(settings as any).assets?.faviconUrl || ""}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        assets: { ...(prev as any).assets, faviconUrl: e.target.value }
+                      }))}
+                      placeholder="/favicon.ico or https://..."
+                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Featured Server Card Color */}
+              <div className="mt-6 space-y-2">
+                <Label className="text-sage-green">Featured Server Card Color</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="color"
+                    value={(settings.colors as any).featuredServerCard || "#3a3a3c"}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      colors: { ...prev.colors, featuredServerCard: e.target.value }
+                    }))}
+                    className="w-12 h-10 p-1 bg-charcoal border-amber-gold/30"
+                  />
+                  <Input
+                    value={(settings.colors as any).featuredServerCard || "#3a3a3c"}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      colors: { ...prev.colors, featuredServerCard: e.target.value }
+                    }))}
+                    className="bg-charcoal border-amber-gold/30 text-sage-green"
+                  />
+                </div>
+                <p className="text-xs text-sage-green/70">This controls the card color for the Featured Server section.</p>
               </div>
             </CardContent>
           </Card>

@@ -30,7 +30,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     await connectDB()
     
     const updateData = await request.json()
-    
+
+    // Normalize/validate gameType if present
+    if (typeof updateData.gameType === 'string') {
+      const allowedTypes = [
+        'fivem','redm','minecraft','rust','gmod','csgo','cs2','valorant','apex','cod','battlefield','ark','7dtd','terraria','satisfactory','valheim','palworld','other'
+      ]
+      const normalizedType = updateData.gameType.toLowerCase()
+      updateData.gameType = allowedTypes.includes(normalizedType) ? normalizedType : 'other'
+    }
+
     const server = await GameServer.findByIdAndUpdate(
       params.id,
       { ...updateData, updatedAt: new Date() },

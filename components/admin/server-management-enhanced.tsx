@@ -80,8 +80,8 @@ interface GameServer {
 }
 
 const gameTypes = [
-  "roleplay", "survival", "minecraft", "rust", "gmod", "csgo", "cs2", 
-  "valorant", "apex", "cod", "battlefield", "ark", "7dtd", 
+  "fivem", "redm", "minecraft", "rust", "gmod", "csgo", "cs2",
+  "valorant", "apex", "cod", "battlefield", "ark", "7dtd",
   "terraria", "satisfactory", "valheim", "palworld", "other"
 ]
 
@@ -143,6 +143,8 @@ export function ServerManagementEnhanced() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log("Form submitted with data:", formData)
+    
     try {
       const url = editingServer 
         ? `/api/admin/servers/${editingServer._id}`
@@ -150,12 +152,16 @@ export function ServerManagementEnhanced() {
       
       const method = editingServer ? "PUT" : "POST"
       
+      console.log("Making request to:", url, "with method:", method)
+      
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       })
 
+      console.log("Response status:", response.status)
+      
       if (response.ok) {
         toast.success(editingServer ? "Server updated successfully!" : "Server created successfully!")
         setIsDialogOpen(false)
@@ -163,9 +169,11 @@ export function ServerManagementEnhanced() {
         fetchServers()
       } else {
         const data = await response.json()
+        console.error("Error response:", data)
         toast.error(data.error || "Failed to save server")
       }
     } catch (error) {
+      console.error("Request failed:", error)
       toast.error("Failed to save server")
     }
   }
@@ -313,19 +321,19 @@ export function ServerManagementEnhanced() {
             </Button>
           </DialogTrigger>
           
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-charcoal-light border-amber-gold/20">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-charcoal-light/90 border-amber-gold/20 text-sage-green">
             <DialogHeader>
-              <DialogTitle className="text-amber-gold">
+              <DialogTitle className="text-primary">
                 {editingServer ? "Edit Server" : "Add New Server"}
               </DialogTitle>
-              <DialogDescription className="text-sage-green/80">
+              <DialogDescription className="text-muted-foreground">
                 Configure your game server settings
               </DialogDescription>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <Tabs defaultValue="basic" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-4 bg-charcoal border border-amber-gold/20">
+                <TabsList className="grid w-full grid-cols-4 bg-muted border border-border">
                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
                   <TabsTrigger value="connection">Connection</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -335,25 +343,25 @@ export function ServerManagementEnhanced() {
                 <TabsContent value="basic" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-sage-green">Server Name *</Label>
+                      <Label htmlFor="name" className="text-foreground">Server Name *</Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        className="bg-input border-border text-foreground"
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="gameType" className="text-sage-green">Game Type *</Label>
+                      <Label htmlFor="gameType" className="text-foreground">Game Type *</Label>
                       <Select value={formData.gameType} onValueChange={(value) => setFormData({ ...formData, gameType: value })}>
-                        <SelectTrigger className="bg-charcoal border-amber-gold/30 text-sage-green">
+                        <SelectTrigger className="bg-input border-border text-foreground">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-charcoal-light border-amber-gold/20">
+                        <SelectContent className="bg-popover border-border">
                           {gameTypes.map((type) => (
-                            <SelectItem key={type} value={type} className="text-sage-green">
+                            <SelectItem key={type} value={type} className="text-popover-foreground">
                               {type.toUpperCase()}
                             </SelectItem>
                           ))}
@@ -363,12 +371,12 @@ export function ServerManagementEnhanced() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-sage-green">Description</Label>
+                    <Label htmlFor="description" className="text-foreground">Description</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                      className="bg-input border-border text-foreground"
                       rows={3}
                     />
                   </div>
@@ -377,48 +385,48 @@ export function ServerManagementEnhanced() {
                 <TabsContent value="connection" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="ip" className="text-sage-green">IP Address *</Label>
+                      <Label htmlFor="ip" className="text-foreground">IP Address *</Label>
                       <Input
                         id="ip"
                         value={formData.ip}
                         onChange={(e) => setFormData({ ...formData, ip: e.target.value })}
-                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        className="bg-input border-border text-foreground"
                         placeholder="127.0.0.1"
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="port" className="text-sage-green">Port *</Label>
+                      <Label htmlFor="port" className="text-foreground">Port *</Label>
                       <Input
                         id="port"
                         type="number"
                         value={formData.port}
                         onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
-                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        className="bg-input border-border text-foreground"
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="maxPlayers" className="text-sage-green">Max Players</Label>
+                      <Label htmlFor="maxPlayers" className="text-foreground">Max Players</Label>
                       <Input
                         id="maxPlayers"
                         type="number"
                         value={formData.maxPlayers}
                         onChange={(e) => setFormData({ ...formData, maxPlayers: parseInt(e.target.value) })}
-                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        className="bg-input border-border text-foreground"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="connectUrl" className="text-sage-green">Connect URL</Label>
+                    <Label htmlFor="connectUrl" className="text-foreground">Connect URL</Label>
                     <Input
                       id="connectUrl"
                       value={formData.connectUrl}
                       onChange={(e) => setFormData({ ...formData, connectUrl: e.target.value })}
-                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                      className="bg-input border-border text-foreground"
                       placeholder="fivem://connect/127.0.0.1:30120"
                     />
                   </div>
@@ -477,17 +485,17 @@ export function ServerManagementEnhanced() {
                 <TabsContent value="advanced" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="gameVersion" className="text-sage-green">Game Version</Label>
+                      <Label htmlFor="gameVersion" className="text-foreground">Game Version</Label>
                       <Input
                         id="gameVersion"
                         value={formData.gameVersion}
                         onChange={(e) => setFormData({ ...formData, gameVersion: e.target.value })}
-                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        className="bg-input border-border text-foreground"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="queryInterval" className="text-sage-green">Query Interval (seconds)</Label>
+                      <Label htmlFor="queryInterval" className="text-foreground">Query Interval (seconds)</Label>
                       <Input
                         id="queryInterval"
                         type="number"
@@ -496,37 +504,37 @@ export function ServerManagementEnhanced() {
                           ...formData, 
                           adminSettings: { ...formData.adminSettings, queryInterval: parseInt(e.target.value) }
                         })}
-                        className="bg-charcoal border-amber-gold/30 text-sage-green"
+                        className="bg-input border-border text-foreground"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="serverImage" className="text-sage-green">Server Image URL</Label>
+                    <Label htmlFor="serverImage" className="text-foreground">Server Image URL</Label>
                     <Input
                       id="serverImage"
                       value={formData.serverImage}
                       onChange={(e) => setFormData({ ...formData, serverImage: e.target.value })}
-                      className="bg-charcoal border-amber-gold/30 text-sage-green"
+                      className="bg-input border-border text-foreground"
                       placeholder="https://example.com/server-banner.jpg"
                     />
                   </div>
                 </TabsContent>
               </Tabs>
               
-              <div className="flex justify-end gap-3 pt-4 border-t border-amber-gold/20">
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
-                  className="border-amber-gold/30 text-sage-green hover:bg-amber-gold/10"
+                  className="border-border text-foreground hover:bg-accent"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-amber-gold hover:bg-amber-gold/90 text-charcoal"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {editingServer ? "Update Server" : "Create Server"}
@@ -539,7 +547,7 @@ export function ServerManagementEnhanced() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-gold"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -558,7 +566,7 @@ export function ServerManagementEnhanced() {
                         {server.isFeatured && <Star className="w-4 h-4 fill-current" />}
                         {server.name}
                       </CardTitle>
-                      <CardDescription className="text-sage-green/80">
+                      <CardDescription className="text-muted-foreground">
                         {server.gameType.toUpperCase()} • {server.ip}:{server.port}
                       </CardDescription>
                     </div>
@@ -603,13 +611,13 @@ export function ServerManagementEnhanced() {
                     ))}
                   </div>
                   
-                  <div className="flex items-center justify-between pt-2 border-t border-amber-gold/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => toggleVisibility(server._id, server.isPublic)}
-                        className="border-amber-gold/30 text-sage-green hover:bg-amber-gold/10"
+                        className="border-border text-foreground hover:bg-accent"
                       >
                         {server.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                       </Button>
@@ -617,7 +625,7 @@ export function ServerManagementEnhanced() {
                         size="sm"
                         variant="outline"
                         onClick={() => toggleFeatured(server._id, server.isFeatured)}
-                        className="border-amber-gold/30 text-sage-green hover:bg-amber-gold/10"
+                        className="border-border text-foreground hover:bg-accent"
                       >
                         {server.isFeatured ? <Star className="w-3 h-3 fill-current" /> : <StarOff className="w-3 h-3" />}
                       </Button>
@@ -628,7 +636,7 @@ export function ServerManagementEnhanced() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(server)}
-                        className="border-amber-gold/30 text-sage-green hover:bg-amber-gold/10"
+                        className="border-border text-foreground hover:bg-accent"
                       >
                         <Edit className="w-3 h-3" />
                       </Button>
@@ -650,16 +658,16 @@ export function ServerManagementEnhanced() {
       )}
       
       {!isLoading && servers.length === 0 && (
-        <Card className="bg-charcoal-light/80 border-amber-gold/20">
+        <Card className="bg-card/80 border-border">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Server className="w-12 h-12 text-amber-gold/50 mb-4" />
-            <h3 className="text-xl font-semibold text-amber-gold mb-2">No Servers Yet</h3>
-            <p className="text-sage-green/80 text-center mb-4">
+            <Server className="w-12 h-12 text-primary/50 mb-4" />
+            <h3 className="text-xl font-semibold text-primary mb-2">No Servers Yet</h3>
+            <p className="text-muted-foreground text-center mb-4">
               Get started by adding your first game server
             </p>
             <Button 
               onClick={() => setIsDialogOpen(true)}
-              className="bg-amber-gold hover:bg-amber-gold/90 text-charcoal"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Your First Server

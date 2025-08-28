@@ -12,7 +12,7 @@ interface Server {
   description: string
   ip: string
   port: number
-  gameType: "roleplay" | "survival" | "minecraft" | "rust" | "gmod" | "csgo" | "other"
+  gameType: "fivem" | "redm" | "minecraft" | "rust" | "gmod" | "csgo" | "cs2" | "valorant" | "apex" | "cod" | "battlefield" | "ark" | "7dtd" | "terraria" | "satisfactory" | "valheim" | "palworld" | "other"
   isPublic: boolean
   isOnline: boolean
   playerCount: number
@@ -56,41 +56,33 @@ function usePing(serverIp: string, serverPort: string, userLocation: { lat: numb
   useEffect(() => {
     // Calculate estimated ping based on geolocation
     if (userLocation) {
-      // Server location (approximate for US East)
-      const serverLat = 39.0458 // Virginia/US East approximate
+      const serverLat = 39.0458
       const serverLon = -76.6413
-      
-      const distance = calculateDistance(
-        userLocation.lat, 
-        userLocation.lon, 
-        serverLat, 
-        serverLon
-      )
-      
-      // Rough estimation: ~1ms per 100km + base latency
+      const distance = calculateDistance(userLocation.lat, userLocation.lon, serverLat, serverLon)
       const estimated = Math.round(distance / 100 + 20)
       setEstimatedPing(estimated)
+    }
+
+    // Skip if no server target yet
+    if (!serverIp || !serverPort) {
+      setPing(null)
+      return
     }
 
     const measurePing = async () => {
       const start = performance.now()
       try {
-        // Try to ping the actual server endpoint
-        const response = await fetch(`/api/servers/ping?ip=${serverIp}&port=${serverPort}`, { 
-          method: "GET", 
-          cache: "no-store" 
-        })
+        await fetch(`/api/servers/ping?ip=${serverIp}&port=${serverPort}`, { method: "GET", cache: "no-store" })
         const end = performance.now()
         const actualPing = Math.round(end - start)
         setPing(actualPing)
       } catch (e) {
-        // If direct ping fails, use estimated ping
         setPing(estimatedPing)
       }
     }
 
     measurePing()
-    const interval = setInterval(measurePing, 15000) // refresh every 15s
+    const interval = setInterval(measurePing, 15000)
     return () => clearInterval(interval)
   }, [serverIp, serverPort, userLocation, estimatedPing])
 
@@ -160,6 +152,7 @@ export function FeaturedServers() {
   const [isLoading, setIsLoading] = useState(true)
   const [showCopyToast, setShowCopyToast] = useState(false)
   const [servers, setServers] = useState<Server[]>([])
+  const [isPaused, setIsPaused] = useState(false)
   const userLocation = useGeolocation()
 
   // Fetch servers from API
@@ -169,7 +162,8 @@ export function FeaturedServers() {
         const response = await fetch("/api/servers/public")
         if (response.ok) {
           const data = await response.json()
-          setServers(data.filter((server: Server) => server.isPublic && server.isOnline))
+          // Show public servers; prioritize featured/online via server order
+          setServers(data.filter((server: Server) => server.isPublic))
         }
       } catch (error) {
         console.error("Failed to fetch servers:", error)
@@ -184,6 +178,15 @@ export function FeaturedServers() {
     return () => clearInterval(interval)
   }, [])
 
+  // Auto-rotate through servers when more than one
+  useEffect(() => {
+    if (servers.length <= 1 || isPaused) return
+    const id = setInterval(() => {
+      setCurrentIndex(prev => (prev + 1) % servers.length)
+    }, 7000)
+    return () => clearInterval(id)
+  }, [servers.length, isPaused])
+
   const nextServer = () => {
     if (servers.length > 0) {
       setCurrentIndex((prev) => (prev + 1) % servers.length)
@@ -196,17 +199,23 @@ export function FeaturedServers() {
     }
   }
 
-  // Don't render if no servers
-  if (servers.length === 0) {
+
+  const currentServer = servers[currentIndex]
+  const serverIp = currentServer?.ip ?? ""
+  const serverPort = currentServer?.port ? String(currentServer.port) : ""
+  const ping = usePing(serverIp, serverPort, userLocation)
+  const { color, label } = getPingStatus(ping)
+
+  // Render nothing until at least one server is available
+  if (!currentServer) {
     return null
   }
 
-  const currentServer = servers[currentIndex]
-  const ping = usePing(currentServer.ip, currentServer.port.toString(), userLocation)
-  const { color, label } = getPingStatus(ping)
-
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-card/20">
+    <section className="py-20 bg-gradient-to-b from-background to-card/20" style={{
+      // allow override via CSS variable from theme applier
+      background: undefined
+    }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center mb-12"
@@ -221,11 +230,33 @@ export function FeaturedServers() {
           </p>
         </motion.div>
 
-        <div className="relative">
+        <div className="relative" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)}>
+          {/* Pagination Dots */}
+          {servers.length > 1 && (
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+              {servers.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  aria-label={`Go to server ${idx + 1}`}
+                  onFocus={() => setIsPaused(true)}
+                  onBlur={() => setIsPaused(false)}
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`w-3.5 h-3.5 rounded-full border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40
+                    ${idx === currentIndex
+                      ? 'border-primary bg-primary/50'
+                      : 'border-foreground/40 hover:border-foreground/70 bg-transparent'}`}
+                />
+              ))}
+            </div>
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
               className="western-card p-8 max-w-4xl mx-auto"
+              style={{ background: `var(--featured-server-card, var(--card))` }}
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -100 }}

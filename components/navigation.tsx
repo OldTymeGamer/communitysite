@@ -33,7 +33,7 @@ export function Navigation() {
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} className="flex items-center">
               <img
                 src="/logo.png"
-                alt="The Lost Trail logo"
+                alt="logo"
                 className="h-9 w-9 rounded-md shadow-lg"
               />
             </motion.div>

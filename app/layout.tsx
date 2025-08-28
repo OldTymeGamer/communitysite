@@ -6,6 +6,7 @@ import { Navigation } from "@/components/navigation"
 import { FloatingParticles } from "@/components/floating-particles"
 import { AuthProvider } from "@/components/session-provider"
 import { SetupRedirect } from "@/components/setup-redirect"
+import ThemeSettingsApplier from "@/components/theme-settings-applier"
 
 const rye = Rye({
   weight: "400",
@@ -40,9 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${rye.variable} ${inter.variable} antialiased`}>
-      <body className="min-h-screen bg-gradient-to-br from-charcoal via-charcoal-light to-charcoal text-sage-green">
+      <body className="min-h-screen">
         <AuthProvider>
           <SetupRedirect />
+          <ThemeSettingsApplier />
           <FloatingParticles />
           <Navigation />
           <main className="relative z-10">{children}</main>

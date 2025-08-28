@@ -6,7 +6,7 @@
   /* Updated color tokens for western-cyberpunk theme */
   --background: #1c1c1e; /* Dark Charcoal */
   --foreground: #f5f5f5; /* Soft Tan */
-  --card: #5b3a29; /* Deep Brown */
+  --card: #3a3a3c; /* Deep Brown */
   --card-foreground: #f5f5f5; /* Soft Tan */
   --popover: #3a3a3c; /* Charcoal Gray */
   --popover-foreground: #f5f5f5; /* Soft Tan */
@@ -21,7 +21,7 @@
   --destructive: #ff4c4c; /* Red for alerts */
   --destructive-foreground: #ffffff; /* White */
   --border: #3a3a3c; /* Charcoal Gray */
-  --input: #f5f5f5; /* Soft Tan */
+  --input: #0e0d0d; /* Soft Tan */
   --ring: rgba(0, 127, 255, 0.5); /* Semi-transparent Electric Blue */
   --chart-1: #ffc107; /* Amber Gold */
   --chart-2: #007fff; /* Electric Blue */
